@@ -1,0 +1,84 @@
+name: XJTUToolboxIOS
+options:
+  bundleIdPrefix: com.xjtu.toolbox
+targets:
+  XJTUToolboxIOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - XJTUToolboxIOS
+    preBuildScripts:
+      - name: Build KMP Shared Framework
+        basedOnDependencyAnalysis: false
+        script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+    info:
+      path: XJTUToolboxIOS/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.xjtu.toolbox.ios
+      FRAMEWORK_SEARCH_PATHS:
+        - "$(inherited)"
+        - "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+      OTHER_LDFLAGS:
+        - "$(inherited)"
+        - "-framework"
+        - "XJTUToolboxShared"
+schemes:
+  XJTUToolboxIOS:
+    build:
+      targets:
+        XJTUToolboxIOS: all
+    run:
+      config: Debug
+  XJTUToolboxIOS-PreviewAutoLogin:
+    build:
+      targets:
+        XJTUToolboxIOS: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-XJTUPreviewAutoLogin": true
+  XJTUToolboxIOS-PreviewAccountChoice:
+    build:
+      targets:
+        XJTUToolboxIOS: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-XJTUPreviewAccountChoice": true
+  XJTUToolboxIOS-RealLoginValidation:
+    build:
+      targets:
+        XJTUToolboxIOS: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-XJTURealLoginValidation": true
+        "-XJTUAuthNetworkDebug": true
+  XJTUToolboxIOS-RealPublicData:
+    build:
+      targets:
+        XJTUToolboxIOS: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-XJTUPreviewAutoLogin": true
+        "-XJTURealPublicData": true
+        "-XJTUAuthNetworkDebug": true
+        "-XJTUStartTab": true
+        "tools": true
+  XJTUToolboxIOS-RealFirstReleaseCore:
+    build:
+      targets:
+        XJTUToolboxIOS: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-XJTURealFirstReleaseCore": true
+        "-XJTUAuthNetworkDebug": true

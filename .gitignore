@@ -33,6 +33,7 @@ build/
 # Generated files
 output.json
 output-metadata.json
+/.codegraph/
 
 # Local config
 local.properties

@@ -1,0 +1,117 @@
+# iOS Migration Execution Notes
+
+## First iOS Release
+
+Build the first iOS release around the highest-use and highest-risk workflows:
+
+- Unified auth: CAS, RSA, graph captcha, MFA, Safety Verify, account choice, password invalidation guard, login attempt governor, and official browser-auth callback handoff where school CAS permits it.
+- Access mode: automatic, forced direct, forced WebVPN.
+- Schedule: week view data, exams, textbooks, cached offline display.
+- Grades: JWAPP grades, GPA model, score detail.
+- Campus card: balance, transactions, expense/income normalization, summary cards.
+- Notices: public notice aggregation and source filtering.
+- Empty rooms: campus, building, date, and section filters.
+- Settings: access mode, cache clearing, about/version, logout.
+
+## Current Migration Slice
+
+- `DefaultCoreFeatureService` now provides the shared-facing seam for dashboard, schedule, grades, campus card, notices, and empty rooms.
+- `CachedCoreFeatureService` wraps that seam with TTL reuse and stale-cache fallback so ordinary page navigation does not repeatedly hit school systems.
+- SwiftUI uses `FeatureStore` and `SharedFeatureProviding` so the first iOS tabs render real model-shaped data through the same seam that the generated KMP adapter will implement. `FeatureStore` also owns iOS schedule day-filter state, textbook filter state, grade presentation state, empty-room filter state, campus-card pagination state, and notice source filtering state while keeping backend requests at the KMP seam.
+- `shared` now produces a static `XJTUToolboxShared.framework` for iOS device and simulator targets.
+- `iosApp/project.yml` is an XcodeGen app target that builds and embeds the KMP framework through `:shared:embedAndSignAppleFrameworkForXcode`; `xcodegen generate` now produces `iosApp/XJTUToolboxIOS.xcodeproj`, and a Debug simulator `xcodebuild` passes on `iPhone 16, iOS 18.6`.
+- `Info.plist` includes a launch-screen declaration and portrait orientation so the simulator app launches full-screen instead of in legacy letterboxed compatibility mode.
+- `KmpBridge.swift` maps generated KMP `AuthManager` and `CoreFeatureService` exports into the Swift-facing `SharedAuthManaging` and `SharedFeatureProviding` interfaces.
+- `KmpPlatformAdapters.swift` maps iOS Keychain credentials, UserDefaults access-mode state, UserDefaults login-attempt cooldowns, stable visitorId, Security.framework RSA encryption, `HTTPCookieStorage`, and `URLSession` into KMP platform seams.
+- `KmpURLSessionHttpClient` disables Foundation's automatic cookie injection by default; shared `CookieAwareHttpClient` attaches cookies and writes `Set-Cookie` so KMP owns cookie isolation.
+- `RequestPacingHttpClient` wraps real iOS session `URLSession` clients for low-frequency integration. The explicit real assemblies currently pace direct requests by at least 750 ms and WebVPN requests by at least 1000 ms; preview/public-only wiring remains unaffected.
+- `HttpSiteSession` is now the authenticated business-HTTP seam. Feature repositories execute requests through the session, while auth headers, cookies, and direct/WebVPN backend selection stay in the session/backend layer.
+- `BackendSiteSession` is the first generic implementation: it runs a site authenticate seam once from `ensureAuthenticated(context)`, stores returned auth headers, and delegates requests to `SessionBackend`.
+- `NcardSessionAuthenticator` performs the bounded ncard SSO ticket-to-JWT exchange behind `BackendSiteSession`. It makes at most two login-entry requests to handle the known TGC redirect fallback and then fails rather than looping.
+- `XjtuSessionRegistryFactory.campusCardSessionRegistry()` builds a `SessionRegistry` with a `CAMPUS_CARD` session factory, selecting direct or WebVPN backend from `AccessMode`.
+- `XjtuSessionRegistryFactory.firstReleaseSessionRegistry()` builds `SCHEDULE`, `GRADE`, and `CAMPUS_CARD` sessions for the first-release real-core assembly.
+- `CasAuthEngine` now provides the shared CAS password-login adapter skeleton: login form parsing, RSA encryption seam, manual graph-captcha challenge, user-confirmed account-type choice, MFA detect, secure-phone SMS send/validate, Safety Verify replay, and direct/WebVPN HTTP backend selection are tested in KMP instead of being reimplemented in SwiftUI.
+- `XjtuNoticeRepository` is a real shared public notice repository. It fetches configured XJTU CMS notice lists sequentially, parses list/date/link structure in KMP, skips failed sources, and does not require login.
+- `EmptyRoomCdnRepository` is a real shared public feature repository. It fetches the public XJTUToolBox empty-room CDN JSON, parses campus/building/room status in KMP, filters rooms by section range, and needs no login.
+- `CampusCardNcardParser` now owns ncard JSON parsing in shared for card balance and transaction direction. It treats only recharge/top-up signals as income, so QR-code/payment-code spending remains an expense.
+- `NcardCampusCardRepository` now owns ncard card-info and transaction-page requests behind `CampusCardRepository`. It requires a `CAMPUS_CARD` `HttpSiteSession` and loads only the requested page, keeping iOS pagination user-driven. The Swift feature seam and `KmpBridge` pass campus-card `page`/`pageSize` through instead of pinning iOS to page 1.
+- `AppDependencyFactory.makeKmpWithRealCampusCardAndPublicData()` is an explicit development assembly for real CAS auth, real ncard campus-card data, real public notices, and real empty-room CDN data while schedule/grade remain preview-backed.
+- `JwappScheduleRepository` now owns current-term, course, exam, and textbook report requests behind `ScheduleRepository`, with shared JSON/HTML parsing and auth-HTML guards.
+- `JwappGradeRepository` now owns precise CJ grade requests behind `GradeRepository`, including one module-session initialization, term filtering, and bounded sequential pagination.
+- `FineReportTextbookParser` parses textbook report tables and positioned FineReport div output, extracts report session IDs, and caps page traversal through `JwappScheduleRepository.maxTextbookPages`.
+- `AppDependencyFactory.makeKmpWithRealFirstReleaseCore()` is the broadest explicit development assembly: real CAS auth, JWAPP schedule/exams/textbooks/grades, ncard campus card, public notices, and empty-room CDN. It is still not the default path.
+- `XjtuToolboxPreviewFactory` assembles preview `CoreFeatureService` repositories, and `AppDependencyFactory` now uses a KMP preview `AuthManager` backed by iOS platform adapters when the framework is importable.
+- `AppDependencyFactory` keeps preview wiring isolated and provides the single switch point for real KMP dependencies. Pure Swift fallback uses `CachedFeatureProvider`; KMP wiring wraps feature services with shared `CachedCoreFeatureService` and, for the real iOS bridge, an outer policy-gated `CachedFeatureProvider` only for schedule, public notices, and public empty rooms.
+- `AppDependencyFactory.makeKmpCasAuthManager()` is the prepared iOS real-auth assembly using `CasAuthEngine`, `KmpRsaPasswordEncryptor`, direct/WebVPN session backends, Keychain, UserDefaults access-mode persistence, and persisted attempt governors.
+- `AppDependencyFactory.makeKmpWithRealLoginValidation()` is the narrow live-account validation assembly: real CAS password auth with preview feature data, so login success does not automatically trigger JWAPP/ncard feature requests.
+- The profile tab shows the current dependency mode, authenticated username, auth source, and feature-data source. In `RealLoginValidation`, a successful real CAS login still displays preview business data by design.
+- `AppDependencyFactory.makeKmpPreviewWithRealEmptyRooms()` is an optional mixed wiring for development: preview auth and preview logged-in features, but real public empty-room CDN data.
+- `AppDependencyFactory.makeKmpPreviewWithRealPublicData()` is the broader public-data wiring: preview auth and preview logged-in features, but real public notices plus empty-room CDN data.
+- `AppDependencyFactory.makeDefault()` stays preview by default, but accepts explicit launch arguments for controlled simulator/device integration: `-XJTURealLoginValidation`, `-XJTURealEmptyRooms`, `-XJTURealPublicData`, `-XJTURealCampusCardAndPublicData`, and `-XJTURealFirstReleaseCore`.
+- `iosApp/project.yml` defines local validation schemes: default preview, preview auto-login, `XJTUToolboxIOS-RealLoginValidation` for live-account login-only validation, and `XJTUToolboxIOS-RealPublicData` for no-account public notices plus empty-room CDN validation. The public-data scheme also passes `-XJTUPreviewAutoLogin` and starts on the `tools` tab so it reaches the real public repositories without enabling real CAS.
+- `XJTUToolboxIOS-PreviewAccountChoice` opens the account-type challenge with preview auth. Use it before live-account testing to verify that the picker defaults to undergraduate and requires explicit confirmation.
+- Local iOS build baseline:
+  `cd iosApp && xcodegen generate && cd .. && xcodebuild -project iosApp/XJTUToolboxIOS.xcodeproj -scheme XJTUToolboxIOS -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6' build`.
+- `FeatureStore` loads missing data on first view entry and reserves forced network refresh for pull-to-refresh.
+- `FeatureStore` now supports local schedule day and textbook filtering. The iOS 日程 tab summarizes visible/all courses, exams, substantive textbooks, and current view, sorts courses by weekday/section/name, shows course week ranges without inferring the current teaching week, and lets textbook rows be filtered by "全部教材" / "有教材" / "无教材" over already-loaded schedule records.
+- `FeatureStore` now supports local grade presentation controls. The iOS `学辅` grade section summarizes GPA, credits, course count, highest grade point, and "需关注" count, then filters/sorts existing `GradeItem` records without requesting additional school data.
+- `FeatureStore` now supports user-driven campus-card transaction pagination. The iOS `学辅` campus-card section shows balance, holder, loaded transaction count, income/expense totals over loaded records, signed transaction amounts, empty-flow copy, and a "加载更多流水" action when another page may exist.
+- `FeatureStore` now supports local notice source filtering. The iOS `学辅` notice section derives source choices from the loaded public notices, filters without another network request, and shows a filtered-empty state when the selected source has no current-page records.
+- `FeatureStore` now supports iOS empty-room campus, teaching-building, date, and section-range filters. Campus/date/section changes invalidate the empty-room query and reload through KMP; building filtering is local over the returned campus/day/section result set.
+- `FeatureStore` clears the active provider cache before user-triggered forced loads so pull-to-refresh does not silently return a fresh cache entry.
+- `FeatureStore` gates forced provider-cache clearing to once per 30 seconds. Repeated pull-to-refresh gestures inside that window reuse cached data instead of repeatedly forcing school-system requests.
+- `CachedFeatureProvider` gives the Swift preview/KMP bridge layer a UserDefaults-backed stale cache, and Settings now clears both Swift cache state and any inner provider cache after user confirmation. The real KMP bridge whitelist is intentionally narrow: schedule, public notices, and public empty rooms can persist; grades, campus card, and dashboard cannot. Cache clearing does not remove Keychain credentials.
+- Settings writes the selected access mode through shared auth. Switching between automatic, direct, and WebVPN invalidates current site sessions before later feature loads recreate them.
+- SwiftUI must not call `SiteSession` or concrete school adapters directly; session acquisition belongs in shared feature service implementations.
+- Site-specific CAS/Safety Verify reauthentication is user-triggered. When JWAPP returns CAS/Safety Verify HTML, shared auth records the response context and iOS shows a continue-verification action; it must not auto-send MFA/Safety Verify SMS during background feature auto-load.
+
+## Later iOS Releases
+
+- Coupon, library seats, school-wide course search, class replay, LMS, transcript, textbook center, NeoSchool, venue booking, evaluation, payment code, downloads, and widgets.
+- Android-only features must be replaced with iOS equivalents rather than ported directly: WidgetKit for widgets, AVPlayer for video, Share Sheet for exported files, and App Store/TestFlight/download page for updates.
+
+## Problems Being Fixed During Migration
+
+- `MainActivity.kt` currently mixes routing, login state, network detection, update checks, dashboard cards, dialogs, and feature entry logic.
+- Authentication has both legacy concrete login caches and a newer `SessionManager`/`SiteSession` model.
+- MFA, Safety Verify, WebVPN, cookie refresh, and per-site re-authentication are spread across multiple layers.
+- Password/login failures could previously be retried too aggressively by UI or adapter code; the shared auth layer now blocks exact invalid-credential retries and applies transient-failure backoff before another school-system request is allowed.
+- Official browser-auth startup failures are also throttled in shared auth so repeated attempts to open/prepare the official login handoff cannot create a tight loop.
+- Login cooldown state has a pluggable store so iOS can persist retry windows across app restarts instead of resetting protection when the process is killed.
+- Release signing previously had a hardcoded local keystore password fallback; signing must now come from environment secrets or local untracked config.
+- Tests were too sparse for school endpoint churn. The `shared` module now starts fixture-driven tests for auth, real WebVPN URL conversion, and core feature parsing.
+- Real school-system HTTP now has a shared request-pacing wrapper that serializes session-backend requests through a minimum interval. Keep this enabled for CAS/JWAPP/ncard/WebVPN opt-in assemblies before live account testing.
+- Public notice aggregation is intentionally sequential and capped per source. It should not be changed to eager parallel fetching unless the UI adds explicit user controls and caching protections for public-site rate pressure.
+- Campus-card history should stay page-limited and user-driven on iOS. `NcardCampusCardRepository` already follows this rule; do not port Android's eager multi-page parallel fetch into the first iOS repository.
+- Grade pagination must remain bounded. `JwappGradeRepository` has `pageSize` and `maxPages`; do not change it to unbounded auto-pagination.
+- Textbook report pagination must remain bounded. `JwappScheduleRepository` has `maxTextbookPages`; keep textbook loading lazy and user-driven.
+
+## Login Safety And Official Auth
+
+- iOS must never auto-loop password login, MFA submission, browser-auth callback resume, or WebVPN re-login. UI actions are user-driven, and `AuthManager` returns the pending MFA/browser-auth challenge instead of starting duplicate requests.
+- Do not make real school-system wiring the default startup path. It must stay behind explicit launch arguments or source-level development switches so preview runs never contact login/JWAPP/ncard accidentally.
+- Start live-account validation with `XJTUToolboxIOS-RealLoginValidation`. This mode uses real CAS password auth but preview feature data, so passwords/MFA/captcha handling can be tested without dashboard aggregation immediately contacting JWAPP or ncard.
+- Treat mismatched schedule, grade, card, or dashboard data in `XJTUToolboxIOS-RealLoginValidation` as expected unless the profile tab reports a real feature-data mode. That scheme validates authentication only.
+- The in-app CAS path is now guarded by `CasAuthEngine` plus `DefaultAuthManager`: service-shape changes such as a missing `execution`, unexpected account choice, unsupported callback service, or malformed MFA JSON produce explicit results instead of blind repost loops. CAS graph captcha is supported as a manual `NeedCaptcha` challenge and is not bypassed or OCRed.
+- CAS account choice is part of the app-internal login path, not browser-auth. The Android legacy implementation distinguished undergraduate and postgraduate accounts but defaulted to postgraduate; the new iOS/shared flow defaults the visible picker to undergraduate when present, then posts only the user-confirmed selection. Shared parsing is fixture-tested for both newer `account-wrap`/`el-radio` markup and legacy `input name="username"` radio/hidden markup.
+- Challenge transitions must clear stale local inputs. Moving from captcha/account-choice to MFA or browser-auth should not preserve old captcha codes, MFA codes, or account-choice ids in SwiftUI state.
+- In real CAS validation modes, the login screen should not present the official browser-login button until the school accepts an app callback/Universal Link. Show the disabled-path explanation and keep users on the app-internal username/password flow.
+- MFA/Safety Verify and browser-auth callback failures are challenge-throttled in shared auth; platform UI button disabling is only an extra guard, not the primary protection.
+- Site-specific verification starts through shared `AuthManager.beginSiteVerification(site)` only after the user acts on `SiteVerificationRequired`; it reuses the same captcha/MFA/account-choice challenge loop and challenge throttling as normal login.
+- Graph-captcha submission is also challenge-throttled in shared auth. The captcha image is fetched by shared through the same paced CAS HTTP session, then displayed by SwiftUI from base64 so iOS does not make a separate cookie-less image request.
+- `beginBrowserAuth(site)` startup failures and `resumeBrowserAuth(callbackUrl)` callback/artifact-exchange failures are throttled with the shared governor under one stable site-level browser scope before another official-login startup request is allowed.
+- Persist login cooldown records through the iOS KMP adapter; `UserDefaultsLoginAttemptStore` is present as the Swift-side storage shape if the generated bridge needs a platform adapter.
+- Password and challenge cooldowns use separate UserDefaults prefixes on iOS so an MFA/browser callback throttle cannot overwrite a password-login throttle record.
+- Feature screens should call `ensureSession(site)` freely, but shared auth reuses authenticated `SiteSession` instances so repeated view refreshes do not re-run site login adapters.
+- Even after session reuse and cache cooldowns, real iOS session backends remain paced at the HTTP-client layer. This protects against accidental bursts from dashboard aggregation, pull-to-refresh, or future UI regressions.
+- Site authenticators must stay bounded. `NcardSessionAuthenticator` has a two-attempt SSO fallback for missing ticket and no automatic token-refresh loop on business requests.
+- `SessionBackend.webvpn` rewrites URLs before cookie lookup. This preserves direct/WebVPN cookie isolation and avoids sending direct CAS cookies to the WebVPN host or vice versa.
+- `ASWebAuthenticationSession` is the preferred iOS handoff for official unified login because it keeps the school page official and avoids duplicating volatile form verification in SwiftUI.
+- Callback scheme/state validation and `ticket`/`code` extraction live in shared auth. SwiftUI should present the handoff and pass the callback URL through; it should not make auth decisions from raw URL strings.
+- After a browser-auth failure, SwiftUI must re-read shared auth state instead of keeping its previous pending browser-auth view. Invalid callbacks may stay pending; artifact-exchange failures may clear shared auth and should return the UI to the login flow.
+- The real CAS engine must fail closed unless an explicit `BrowserAuthHandler` can exchange that callback artifact into an app-owned auth context. A raw `ticket`/`code` proves only that the browser handoff returned, not that feature sessions are authenticated.
+- Browser auth can replace password entry only if the school login flow accepts the app callback service and returns an app-readable artifact such as a CAS ticket, OAuth code, or Universal Link. Live validation on 2026-05-30 showed XJTU CAS rejects the unregistered `xjtutoolbox://auth` service, so the current priority is in-app CAS captcha support, not asking users to prefer网页登录. Without an accepted callback, iOS cannot copy official-site HttpOnly cookies from Safari/`ASWebAuthenticationSession` into the app's session store.
+
+## Implementation Rule
+
+New cross-platform behavior goes into `shared` first. Platform apps should adapt to shared interfaces and should not add new school-system parsing or auth state machines directly in SwiftUI or `MainActivity.kt`.

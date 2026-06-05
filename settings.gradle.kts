@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "XJTUToolBox"
 include(":app")
+include(":shared")

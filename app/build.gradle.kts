@@ -29,15 +29,6 @@ android {
                 storePassword = System.getenv("STORE_PASSWORD")
                 keyAlias = System.getenv("KEY_ALIAS")
                 keyPassword = System.getenv("KEY_PASSWORD")
-            } else {
-                // 本地开发：从项目根目录读取 release.jks
-                val localKeystore = rootProject.file("release.jks")
-                if (localKeystore.exists()) {
-                    storeFile = localKeystore
-                    storePassword = "XjtuToolbox2026!"
-                    keyAlias = "xjtu-toolbox"
-                    keyPassword = "XjtuToolbox2026!"
-                }
             }
             // minSdk=31 全覆盖 V3 支持范围（API≥28），强制启用以获得更强签名保护和密钥轮换能力
             enableV3Signing = true
@@ -66,6 +57,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)

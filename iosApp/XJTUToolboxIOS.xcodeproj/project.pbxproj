@@ -1,0 +1,387 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0E2B97B9D43D30A330B0187C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 596445D6F764C720DA70C285 /* DashboardView.swift */; };
+		1388BE857344C6D6095C45F6 /* OfficialBrowserAuthPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8DCFD38D284D30677D684B0 /* OfficialBrowserAuthPresenter.swift */; };
+		29F93419CBE588DD1BF60332 /* KeychainCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4909389D767EB19741C4BF4B /* KeychainCredentialStore.swift */; };
+		3AE0C46490B3C5538CA61E5F /* LaunchArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3856C0326B514E15A62E09B6 /* LaunchArguments.swift */; };
+		5CEE49D195E08144C6799628 /* KmpBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07C264B009C6E4C68E653DD /* KmpBridge.swift */; };
+		5DA7CC88D61A30D14D8AA26C /* FeatureBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E776F65AFB1C915AE1170B07 /* FeatureBridge.swift */; };
+		65C414FA35CB9E02A5D3FB9E /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E8DD725AD9D280D9F26885 /* RootView.swift */; };
+		6893889708921F58B3D826DB /* XJTUToolboxIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF6EEA67BCE3B60118734FF /* XJTUToolboxIOSApp.swift */; };
+		6D7BC4A8650609B2FE9A1B7F /* KmpPlatformAdapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26834A78933293B7DB2F0F3 /* KmpPlatformAdapters.swift */; };
+		703D3EA80FA7B0C88E73E0E4 /* LoginAttemptStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333E176D39B68B3FCD7C8293 /* LoginAttemptStore.swift */; };
+		7B9BB4163EDC61A517315473 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85B3ACEB9C88F39C6780A839 /* AuthStore.swift */; };
+		892F0565A1FB4C41C8D12637 /* SharedBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CD66D62782BAEB3C88E108 /* SharedBridge.swift */; };
+		9863195FE411E2511EC80309 /* AccessModeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558FB1C2ACE9A3E4D637FDD7 /* AccessModeStore.swift */; };
+		AE37C8D8A111E8319EB8F359 /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A02D13A53DCD13ECCF373439 /* AppDependencies.swift */; };
+		CA58983D6D297E9D0A46AEEB /* FeatureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110296FB843705633BA1FE46 /* FeatureStore.swift */; };
+		D84A8C977E3900E0E326B4DB /* FeatureCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A66E4AD9702D1A22A56420 /* FeatureCacheStore.swift */; };
+		F746E79F02B6CB1224E5C1CA /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63AD938F739DB7F22302947 /* Router.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		110296FB843705633BA1FE46 /* FeatureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureStore.swift; sourceTree = "<group>"; };
+		20A66E4AD9702D1A22A56420 /* FeatureCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureCacheStore.swift; sourceTree = "<group>"; };
+		333E176D39B68B3FCD7C8293 /* LoginAttemptStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginAttemptStore.swift; sourceTree = "<group>"; };
+		3856C0326B514E15A62E09B6 /* LaunchArguments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchArguments.swift; sourceTree = "<group>"; };
+		46E8DD725AD9D280D9F26885 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		4909389D767EB19741C4BF4B /* KeychainCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainCredentialStore.swift; sourceTree = "<group>"; };
+		558FB1C2ACE9A3E4D637FDD7 /* AccessModeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessModeStore.swift; sourceTree = "<group>"; };
+		55CAB546CB4BDF9B47BFBC2E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		596445D6F764C720DA70C285 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		5FF6EEA67BCE3B60118734FF /* XJTUToolboxIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XJTUToolboxIOSApp.swift; sourceTree = "<group>"; };
+		85B3ACEB9C88F39C6780A839 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
+		997ED01D6FE992DCA6057CDB /* XJTUToolboxIOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = XJTUToolboxIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A02D13A53DCD13ECCF373439 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
+		A4CD66D62782BAEB3C88E108 /* SharedBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedBridge.swift; sourceTree = "<group>"; };
+		C26834A78933293B7DB2F0F3 /* KmpPlatformAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpPlatformAdapters.swift; sourceTree = "<group>"; };
+		D07C264B009C6E4C68E653DD /* KmpBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpBridge.swift; sourceTree = "<group>"; };
+		D8DCFD38D284D30677D684B0 /* OfficialBrowserAuthPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficialBrowserAuthPresenter.swift; sourceTree = "<group>"; };
+		E63AD938F739DB7F22302947 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
+		E776F65AFB1C915AE1170B07 /* FeatureBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureBridge.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		72E03BBD468C6A46E3258CB2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				997ED01D6FE992DCA6057CDB /* XJTUToolboxIOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		769E67171C789574C635A33B = {
+			isa = PBXGroup;
+			children = (
+				B276FE3611C5E4DD618CF175 /* XJTUToolboxIOS */,
+				72E03BBD468C6A46E3258CB2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B276FE3611C5E4DD618CF175 /* XJTUToolboxIOS */ = {
+			isa = PBXGroup;
+			children = (
+				558FB1C2ACE9A3E4D637FDD7 /* AccessModeStore.swift */,
+				A02D13A53DCD13ECCF373439 /* AppDependencies.swift */,
+				85B3ACEB9C88F39C6780A839 /* AuthStore.swift */,
+				596445D6F764C720DA70C285 /* DashboardView.swift */,
+				E776F65AFB1C915AE1170B07 /* FeatureBridge.swift */,
+				20A66E4AD9702D1A22A56420 /* FeatureCacheStore.swift */,
+				110296FB843705633BA1FE46 /* FeatureStore.swift */,
+				55CAB546CB4BDF9B47BFBC2E /* Info.plist */,
+				4909389D767EB19741C4BF4B /* KeychainCredentialStore.swift */,
+				D07C264B009C6E4C68E653DD /* KmpBridge.swift */,
+				C26834A78933293B7DB2F0F3 /* KmpPlatformAdapters.swift */,
+				3856C0326B514E15A62E09B6 /* LaunchArguments.swift */,
+				333E176D39B68B3FCD7C8293 /* LoginAttemptStore.swift */,
+				D8DCFD38D284D30677D684B0 /* OfficialBrowserAuthPresenter.swift */,
+				46E8DD725AD9D280D9F26885 /* RootView.swift */,
+				E63AD938F739DB7F22302947 /* Router.swift */,
+				A4CD66D62782BAEB3C88E108 /* SharedBridge.swift */,
+				5FF6EEA67BCE3B60118734FF /* XJTUToolboxIOSApp.swift */,
+			);
+			path = XJTUToolboxIOS;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6828FA35A10F30F1F5670216 /* XJTUToolboxIOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C8CD10A6A133127DF199E01B /* Build configuration list for PBXNativeTarget "XJTUToolboxIOS" */;
+			buildPhases = (
+				C40F9129F913186F3D4EC38E /* Build KMP Shared Framework */,
+				051188AD44533FFF03818026 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = XJTUToolboxIOS;
+			packageProductDependencies = (
+			);
+			productName = XJTUToolboxIOS;
+			productReference = 997ED01D6FE992DCA6057CDB /* XJTUToolboxIOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EDE78985F1A385B8364E0B9C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 181CF651CEB5A02FAF97AC72 /* Build configuration list for PBXProject "XJTUToolboxIOS" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 769E67171C789574C635A33B;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 72E03BBD468C6A46E3258CB2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6828FA35A10F30F1F5670216 /* XJTUToolboxIOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C40F9129F913186F3D4EC38E /* Build KMP Shared Framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build KMP Shared Framework";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		051188AD44533FFF03818026 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9863195FE411E2511EC80309 /* AccessModeStore.swift in Sources */,
+				AE37C8D8A111E8319EB8F359 /* AppDependencies.swift in Sources */,
+				7B9BB4163EDC61A517315473 /* AuthStore.swift in Sources */,
+				0E2B97B9D43D30A330B0187C /* DashboardView.swift in Sources */,
+				5DA7CC88D61A30D14D8AA26C /* FeatureBridge.swift in Sources */,
+				D84A8C977E3900E0E326B4DB /* FeatureCacheStore.swift in Sources */,
+				CA58983D6D297E9D0A46AEEB /* FeatureStore.swift in Sources */,
+				29F93419CBE588DD1BF60332 /* KeychainCredentialStore.swift in Sources */,
+				5CEE49D195E08144C6799628 /* KmpBridge.swift in Sources */,
+				6D7BC4A8650609B2FE9A1B7F /* KmpPlatformAdapters.swift in Sources */,
+				3AE0C46490B3C5538CA61E5F /* LaunchArguments.swift in Sources */,
+				703D3EA80FA7B0C88E73E0E4 /* LoginAttemptStore.swift in Sources */,
+				1388BE857344C6D6095C45F6 /* OfficialBrowserAuthPresenter.swift in Sources */,
+				65C414FA35CB9E02A5D3FB9E /* RootView.swift in Sources */,
+				F746E79F02B6CB1224E5C1CA /* Router.swift in Sources */,
+				892F0565A1FB4C41C8D12637 /* SharedBridge.swift in Sources */,
+				6893889708921F58B3D826DB /* XJTUToolboxIOSApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		06BDB6B377C9293D9EE8E38B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		06F60CE68B5B33D7F6DBEA1E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
+				INFOPLIST_FILE = XJTUToolboxIOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					XJTUToolboxShared,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.xjtu.toolbox.ios;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8DF7BAEBA19C5B43AF2213A9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
+				INFOPLIST_FILE = XJTUToolboxIOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					XJTUToolboxShared,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.xjtu.toolbox.ios;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		98FF2C909F45E12849B8E4B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		181CF651CEB5A02FAF97AC72 /* Build configuration list for PBXProject "XJTUToolboxIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				06BDB6B377C9293D9EE8E38B /* Debug */,
+				98FF2C909F45E12849B8E4B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C8CD10A6A133127DF199E01B /* Build configuration list for PBXNativeTarget "XJTUToolboxIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				06F60CE68B5B33D7F6DBEA1E /* Debug */,
+				8DF7BAEBA19C5B43AF2213A9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EDE78985F1A385B8364E0B9C /* Project object */;
+}

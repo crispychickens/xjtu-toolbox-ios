@@ -1,20 +1,21 @@
 # 岱宗盒子
 
 > [!NOTE]
-> 
+>
 > 推荐大家使用[XJTUToolBox](https://github.com/yan-xiaoo/XJTUToolBox.git)，更新修复更快，实现也更稳健；
-> 
+>
 > 作者最近忙炸，开发暂缓...欢迎大家PR！
-> 
+>
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Android-green?logo=android" />
-  <img src="https://img.shields.io/badge/minSdk-31_(Android_12)-blue" />
-  <img src="https://img.shields.io/badge/version-3.3.0-orange" />
+  <img src="https://img.shields.io/badge/platform-iOS_migration-lightgrey?logo=apple" />
+  <img src="https://img.shields.io/badge/minSdk-32-blue" />
+  <img src="https://img.shields.io/badge/version-3.5.1-orange" />
   <img src="https://img.shields.io/badge/license-MIT-lightgrey" />
 </p>
 
-西安交通大学校园工具箱。Kotlin + Jetpack Compose 原生实现，直接调用教务系统、图书馆、校园卡等官方接口，不依赖任何三方服务器。
+西安交通大学校园工具箱。Android 端为 Kotlin + Jetpack Compose 原生实现；当前仓库已开始 KMP shared core + SwiftUI iOS 壳迁移。应用直接调用教务系统、图书馆、校园卡等官方接口，不依赖任何三方服务器。
 
 ---
 
@@ -42,6 +43,7 @@
 
 ## 开发计划
 
+- iOS 首版迁移：统一认证、WebVPN、课表、成绩、校园卡、通知公告、空闲教室、设置与缓存
 - 个人/教务通知订阅 & Push
 - 方案管理
 
@@ -49,9 +51,11 @@
 
 ## 技术栈
 
-纯 Kotlin 2.0 编写，UI 层使用 Jetpack Compose + MIUIX（HyperOS 设计语言），网络层是 OkHttp 4.12，全程启用 Brotli 解压（服务端支持 `Content-Encoding: br` 时生效，降低接口流量而非 APK 体积）。HTML 解析用 Jsoup，本地数据持久化走 Room。构建工具链 AGP 9.0 + Gradle 9.3.1，Release 包经 R8 全量混淆后约 **10 MB**，其中 ~9 MB 为 `classes.dex`（Compose runtime + Media3 + MIUIX 等库的编译产物，无冗余资源）。APK 签名为 v2+v3 双方案。
+Android 端使用 Kotlin 2.2.10、Jetpack Compose + MIUIX（HyperOS 设计语言）。网络层是 OkHttp 4.12，全程启用 Brotli 解压。HTML 解析用 Jsoup，本地数据持久化走 Room。构建工具链为 AGP 9.1.1 + Gradle 9.3.1。
 
-最低支持 Android 12（API 31），目标 Android 16（API 36.1）。
+迁移中的跨端核心位于 `shared` KMP 模块，负责统一认证接口、CAS 登录引擎骨架、会话 seam、WebVPN URL seam、请求节流、核心功能模型、JWAPP 课表/成绩 repository、公共通知聚合、校园卡 ncard session/repository、空闲教室 CDN repository 和回归测试。iOS 壳位于 `iosApp`，使用 SwiftUI、`AuthStore`、`Router` 和 KMP bridge 协议承接 shared framework，并提供 Keychain、UserDefaults、Security.framework RSA、URLSession/cookie 等平台适配器。
+
+Android 最低支持 API 32，目标 Android 16（API 36.1）。iOS 首版目标 iOS 16+。
 
 ---
 
@@ -63,6 +67,22 @@
 
 # Release 包（R8 压缩混淆）
 ./gradlew assembleRelease
+
+# KMP shared JVM 回归测试
+./gradlew :shared:jvmTest
+
+# iOS 模拟器 shared framework
+./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+
+# 生成并构建 iOS SwiftUI 壳
+cd iosApp
+xcodegen generate
+cd ..
+xcodebuild -project iosApp/XJTUToolboxIOS.xcodeproj \
+  -scheme XJTUToolboxIOS \
+  -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6' \
+  build
 ```
 
 项目配置了 GitHub Actions：push/PR 到 `main` 自动编译 Debug，推送 `v*` tag 自动打包 Release 并发布到 GitHub Releases。
@@ -86,5 +106,5 @@ git push origin v3.3.0
 部分核心算法来自 [XJTUToolBox](https://github.com/yan-xiaoo/XJTUToolBox.git)，CAS 登录流程、WebVPN 加解密、FineReport 报表解析、空闲教室 CDN 数据、学期时间计算等均参考或移植自该项目的 Python 实现。感谢 [@yan-xiaoo](https://github.com/yan-xiaoo) 的开源贡献。
 
 ---
- 
+
 **License**：MIT
