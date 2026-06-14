@@ -34,14 +34,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Show tool versions
-        run: |
-          sw_vers
-          xcodebuild -version
-          java -version
-          ./gradlew --version
-          xcrun simctl list runtimes available
-
       - name: Install XcodeGen
         run: |
           if ! command -v xcodegen >/dev/null 2>&1; then
@@ -49,51 +41,8 @@ jobs:
           fi
           xcodegen --version
 
-      - name: Run shared checks
-        run: ./gradlew :shared:check
-
-      - name: Generate iOS project
-        working-directory: iosApp
-        run: xcodegen generate
-
-      - name: Select simulator
-        id: simulator
-        run: |
-          xcrun simctl list devices available -j | python3 -c '
-          import json, sys
-          data = json.load(sys.stdin)
-          candidates = []
-          for runtime, devices in data["devices"].items():
-              if "iOS" not in runtime:
-                  continue
-              for device in devices:
-                  if device.get("isAvailable") and device["name"].startswith("iPhone"):
-                      candidates.append((device["name"] != "iPhone 16", device["name"], runtime, device))
-          if not candidates:
-              raise SystemExit("No available iPhone simulator")
-          _, _, runtime, device = sorted(candidates, key=lambda item: (item[0], item[1], item[2]))[0]
-          print("id={}".format(device["udid"]))
-          print("name={}".format(device["name"]))
-          print(f"runtime={runtime}")
-          ' > "$RUNNER_TEMP/selected-simulator.env"
-          cat "$RUNNER_TEMP/selected-simulator.env"
-          cat "$RUNNER_TEMP/selected-simulator.env" >> "$GITHUB_OUTPUT"
-
-      - name: Boot selected simulator
-        run: |
-          xcrun simctl boot "${{ steps.simulator.outputs.id }}" || true
-          xcrun simctl bootstatus "${{ steps.simulator.outputs.id }}" -b
-
-      - name: Run iOS unit tests
-        working-directory: iosApp
-        run: |
-          rm -rf "$RUNNER_TEMP/XJTUToolboxIOS-tests.xcresult"
-          xcodebuild test \
-            -project XJTUToolboxIOS.xcodeproj \
-            -scheme XJTUToolboxIOS \
-            -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}" \
-            -resultBundlePath "$RUNNER_TEMP/XJTUToolboxIOS-tests.xcresult" \
-            -parallel-testing-enabled NO
+      - name: Run iOS automated release gate
+        run: iosApp/scripts/run-automated-release-gate.sh
 
       - name: Upload XCTest result bundle
         if: failure()
@@ -102,17 +51,3 @@ jobs:
           name: ios-xcresult
           path: ${{ runner.temp }}/XJTUToolboxIOS-tests.xcresult
           if-no-files-found: ignore
-
-      - name: Build unsigned iOS Release archive
-        run: |
-          rm -rf "$RUNNER_TEMP/XJTUToolboxIOS.xcarchive"
-          xcodebuild archive \
-            -project iosApp/XJTUToolboxIOS.xcodeproj \
-            -scheme XJTUToolboxIOS \
-            -configuration Release \
-            -destination "generic/platform=iOS" \
-            -archivePath "$RUNNER_TEMP/XJTUToolboxIOS.xcarchive" \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Validate unsigned iOS Release archive
-        run: iosApp/scripts/validate-release-archive.sh "$RUNNER_TEMP/XJTUToolboxIOS.xcarchive"

@@ -15,12 +15,23 @@ Use this checklist for every build promoted beyond local preview validation. The
 Run the full shared and iOS regression suite, then produce and inspect a device archive without requiring local signing credentials:
 
 ```bash
+iosApp/scripts/run-automated-release-gate.sh
+```
+
+The script selects an available iPhone simulator, preferring `iPhone 16`, and writes the XCTest result bundle and unsigned archive under `$RUNNER_TEMP`, `$TMPDIR`, or `/tmp`. Override these when needed:
+
+```bash
+IOS_PREFERRED_SIMULATOR="iPhone 16" \
+IOS_RESULT_BUNDLE=/tmp/XJTUToolboxIOS-tests.xcresult \
+IOS_ARCHIVE_PATH=/tmp/XJTUToolboxIOS.xcarchive \
+iosApp/scripts/run-automated-release-gate.sh
+```
+
+The manual equivalent is:
+
+```bash
 ./gradlew :shared:check
-
-cd iosApp
-xcodegen generate
-cd ..
-
+(cd iosApp && xcodegen generate)
 xcodebuild test \
   -project iosApp/XJTUToolboxIOS.xcodeproj \
   -scheme XJTUToolboxIOS \
@@ -37,7 +48,7 @@ xcodebuild archive \
 iosApp/scripts/validate-release-archive.sh /tmp/XJTUToolboxIOS.xcarchive
 ```
 
-The remote equivalent is `.github/workflows/ios-validation.yml`. It runs on pull requests, pushes to `main`/`ios-kmp-migration`, and manual `workflow_dispatch`; logs Java/Xcode/simulator/XcodeGen versions; prefers an available `iPhone 16` simulator when present; uploads the `.xcresult` bundle as `ios-xcresult` on XCTest failure; and then runs the same unsigned archive validator.
+The remote equivalent is `.github/workflows/ios-validation.yml`. It runs on pull requests, pushes to `main`/`ios-kmp-migration`, and manual `workflow_dispatch`; installs XcodeGen when needed; invokes the same automated gate script; and uploads the `.xcresult` bundle as `ios-xcresult` on failure.
 
 The archive validator checks:
 
