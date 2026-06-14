@@ -34,13 +34,30 @@ targets:
         - "$(inherited)"
         - "-framework"
         - "XJTUToolboxShared"
+  XJTUToolboxIOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - XJTUToolboxIOSTests
+    dependencies:
+      - target: XJTUToolboxIOS
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.xjtu.toolbox.ios.tests
+      GENERATE_INFOPLIST_FILE: YES
 schemes:
   XJTUToolboxIOS:
     build:
       targets:
         XJTUToolboxIOS: all
+        XJTUToolboxIOSTests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - XJTUToolboxIOSTests
   XJTUToolboxIOS-PreviewAutoLogin:
     build:
       targets:

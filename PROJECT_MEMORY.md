@@ -14,7 +14,7 @@ Low-token current-state snapshot for future agents. This is not a changelog. Use
 - Product: XJTU Toolbox / 岱宗盒子, a direct-to-school-system campus utility for XJTU students.
 - Baseline: the Android v3.5.1 app remains in `app`; `shared` is the Kotlin Multiplatform core; `iosApp` is the SwiftUI shell generated from `iosApp/project.yml`.
 - ADR 0001 establishes KMP shared core plus SwiftUI shell. ADR 0002 establishes login throttling and official browser-auth handoff.
-- CodeGraph is local and ignored by Git. On 2026-06-14 it was current at 262 files, 8,732 nodes, and 18,523 edges.
+- CodeGraph is local and ignored by Git. On 2026-06-14 it was current at 264 files, 8,758 nodes, and 18,589 edges.
 - The 2026-06-14 migration checkpoint spans auth hardening, first-release features, tests, iOS UI, and docs.
 
 ## Stable Architecture And Guardrails
@@ -49,18 +49,19 @@ Estimates as of 2026-06-14; these are engineering judgments, not measured covera
 | Scope | Completion | Assessment |
 |---|---:|---|
 | First-release feature implementation | 90% | Every declared first-release workflow has a shared repository/service seam and iOS surface. Remaining work is mainly validation and release hardening. |
-| Shared architecture and fixture coverage | 88% | Core boundaries and fail-closed parsers are established; school endpoint churn and action workflows remain residual risk. |
+| Shared architecture and fixture coverage | 90% | Core boundaries and fail-closed parsers are established; the first iOS cache/store XCTest baseline now exists. School endpoint churn, action workflows, and broader iOS state coverage remain residual risk. |
 | Real-account integration confidence | 70% | CAS, saved restore, site verification, schedule, grades, and ncard were live-validated. Library seats, coupons, and school-course search have fixture/preview validation but no recorded end-to-end live validation. |
-| iOS product/release readiness | 40% | Simulator builds pass, but default wiring is preview, iOS has no meaningful automated test target, CI is Android-only, and signing/archive/TestFlight/privacy/assets work is not established. |
+| iOS product/release readiness | 45% | Simulator builds and the first XCTest suite pass, and macOS CI configuration exists. Default wiring is still preview; remote CI, signing/archive/TestFlight/privacy/assets work is not established. |
 | Broad Android feature parity | 40% | First-release core is present; attendance, class replay, LMS, transcript, textbook center, NeoSchool, venue booking, evaluation, payment code, downloads, widgets, and other Android-only workflows remain later releases. |
-| Overall first iOS release readiness | 72% | Feature-complete enough for a controlled alpha, not ready for unattended production release. |
+| Overall first iOS release readiness | 74% | Feature-complete enough for a controlled alpha, not ready for unattended production release. |
 
 ## Latest Validation Baseline
 
 - 2026-06-05: live iOS validation passed CAS login, saved credential reuse, mobile JWAPP grade token/grade-list flow, schedule, ncard token exchange/card info/turnover, and inline site reauthorization behavior. Grade detail has fixture/build/presentation validation but no recorded live end-to-end check.
 - 2026-06-14: library seats, coupons, and school-course search first slices were present; school-course search received targeted shared tests and simulator presentation validation, but not a live-account query.
 - 2026-06-14: `./gradlew check` passed in 24m04s; iOS simulator Debug build passed; `git diff --check` passed; simulator visual QA passed; CodeGraph was synchronized.
-- Test shape: shared has substantial fixture-driven common/JVM tests; Android tests are sparse and iOS has no meaningful XCTest/UI-test suite.
+- 2026-06-14: migration checkpoint `9aaff83` captured the reviewed first-release feature state. A generated iOS XCTest target and cache/store suite passed 4/4 locally; macOS CI configuration now runs shared checks and iOS tests, but has not yet produced a remote GitHub Actions result.
+- Test shape: shared has substantial fixture-driven common/JVM tests; Android tests are sparse; iOS has an initial cache/store XCTest suite but no UI-test suite and limited bridge/auth-state coverage.
 
 ## Remaining Milestones
 
@@ -68,10 +69,9 @@ Difficulty: `M` bounded multi-file work, `H` cross-layer or external-system work
 
 | Priority | Remaining node / done condition | Difficulty | Codex reasoning |
 |---|---|---:|---|
-| R0 | Create a clean migration checkpoint: review dirty scope, split intentional changes, run final regression, then commit without absorbing unrelated edits. | M | high |
 | R1 | Live-validate library seats, coupons, and school-course search with owner-entered credentials; cover success, empty, expired-session, site-verification, paging/action errors, and direct/WebVPN where supported. | H | xhigh |
-| R1 | Execute and document a first-release acceptance matrix across cold start, saved restore, captcha/MFA/account choice, per-site reauth, access-mode switch, offline/stale cache, retry, pagination, logout, and relaunch. | H | xhigh |
-| R1 | Add iOS automated coverage: XCTest targets for Swift bridge/store/cache/auth-state behavior plus a small preview UI smoke suite; run it in macOS CI with shared checks. | H | high |
+| R1 | Execute the documented first-release acceptance matrix across cold start, saved restore, captcha/MFA/account choice, per-site reauth, access-mode switch, offline/stale cache, retry, pagination, logout, and relaunch. | H | xhigh |
+| R1 | Expand iOS automated coverage beyond the initial cache/store suite: Swift bridge/auth-state tests and a small preview UI smoke suite; obtain a passing remote macOS CI result. | H | high |
 | R1 | Productionize the iOS assembly: make release configuration use real dependencies without debug launch arguments, keep preview schemes isolated, and verify no debug auth logging or preview data leaks into Release. | VH | xhigh |
 | R1 | Establish iOS release engineering: app identity/signing, icons/assets, privacy manifest and disclosures, archive/export validation, versioning, crash/log policy, TestFlight pipeline, and release checklist. | VH | xhigh |
 | R2 | Harden endpoint-change operations: sanitized diagnostics, fixture refresh workflow, explicit service-change copy, and a controlled live-validation cadence for school-system changes. | H | high |
@@ -80,8 +80,7 @@ Difficulty: `M` bounded multi-file work, `H` cross-layer or external-system work
 
 ## Recommended Execution Order
 
-1. R0 checkpoint the current migration state.
-2. Complete R1 live validation and acceptance matrix; fix only evidence-backed failures.
-3. Add iOS tests/CI, then productionize release wiring.
-4. Complete signing, privacy, archive, and TestFlight work; ship a controlled alpha.
-5. Choose one post-release vertical slice from observed user demand.
+1. Complete R1 live validation and execute the acceptance matrix; fix only evidence-backed failures.
+2. Expand iOS tests and confirm the macOS CI workflow remotely, then productionize release wiring.
+3. Complete signing, privacy, archive, and TestFlight work; ship a controlled alpha.
+4. Choose one post-release vertical slice from observed user demand.

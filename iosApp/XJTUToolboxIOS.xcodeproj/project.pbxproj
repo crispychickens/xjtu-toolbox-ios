@@ -11,6 +11,7 @@
 		1388BE857344C6D6095C45F6 /* OfficialBrowserAuthPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8DCFD38D284D30677D684B0 /* OfficialBrowserAuthPresenter.swift */; };
 		29F93419CBE588DD1BF60332 /* KeychainCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4909389D767EB19741C4BF4B /* KeychainCredentialStore.swift */; };
 		3AE0C46490B3C5538CA61E5F /* LaunchArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3856C0326B514E15A62E09B6 /* LaunchArguments.swift */; };
+		3B067570C08F29BFD51793D2 /* FeatureCacheStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CDFBC9F0ACD77BE25B8DEA /* FeatureCacheStoreTests.swift */; };
 		5CEE49D195E08144C6799628 /* KmpBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07C264B009C6E4C68E653DD /* KmpBridge.swift */; };
 		5DA7CC88D61A30D14D8AA26C /* FeatureBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E776F65AFB1C915AE1170B07 /* FeatureBridge.swift */; };
 		65C414FA35CB9E02A5D3FB9E /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E8DD725AD9D280D9F26885 /* RootView.swift */; };
@@ -26,7 +27,18 @@
 		F746E79F02B6CB1224E5C1CA /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63AD938F739DB7F22302947 /* Router.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		876DF25C69CD0825BB3412FE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EDE78985F1A385B8364E0B9C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6828FA35A10F30F1F5670216;
+			remoteInfo = XJTUToolboxIOS;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		0222205F01D0A6E972EDD7C5 /* XJTUToolboxIOSTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = XJTUToolboxIOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		110296FB843705633BA1FE46 /* FeatureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureStore.swift; sourceTree = "<group>"; };
 		20A66E4AD9702D1A22A56420 /* FeatureCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureCacheStore.swift; sourceTree = "<group>"; };
 		333E176D39B68B3FCD7C8293 /* LoginAttemptStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginAttemptStore.swift; sourceTree = "<group>"; };
@@ -44,6 +56,7 @@
 		C26834A78933293B7DB2F0F3 /* KmpPlatformAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpPlatformAdapters.swift; sourceTree = "<group>"; };
 		D07C264B009C6E4C68E653DD /* KmpBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpBridge.swift; sourceTree = "<group>"; };
 		D8DCFD38D284D30677D684B0 /* OfficialBrowserAuthPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficialBrowserAuthPresenter.swift; sourceTree = "<group>"; };
+		E5CDFBC9F0ACD77BE25B8DEA /* FeatureCacheStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureCacheStoreTests.swift; sourceTree = "<group>"; };
 		E63AD938F739DB7F22302947 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
 		E776F65AFB1C915AE1170B07 /* FeatureBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -53,6 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				997ED01D6FE992DCA6057CDB /* XJTUToolboxIOS.app */,
+				0222205F01D0A6E972EDD7C5 /* XJTUToolboxIOSTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,8 +75,17 @@
 			isa = PBXGroup;
 			children = (
 				B276FE3611C5E4DD618CF175 /* XJTUToolboxIOS */,
+				B2336988483D058043155A8D /* XJTUToolboxIOSTests */,
 				72E03BBD468C6A46E3258CB2 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		B2336988483D058043155A8D /* XJTUToolboxIOSTests */ = {
+			isa = PBXGroup;
+			children = (
+				E5CDFBC9F0ACD77BE25B8DEA /* FeatureCacheStoreTests.swift */,
+			);
+			path = XJTUToolboxIOSTests;
 			sourceTree = "<group>";
 		};
 		B276FE3611C5E4DD618CF175 /* XJTUToolboxIOS */ = {
@@ -111,6 +134,24 @@
 			productReference = 997ED01D6FE992DCA6057CDB /* XJTUToolboxIOS.app */;
 			productType = "com.apple.product-type.application";
 		};
+		714AA2BB170891E02B53113D /* XJTUToolboxIOSTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 810EE39853EF2EDF0BA714E9 /* Build configuration list for PBXNativeTarget "XJTUToolboxIOSTests" */;
+			buildPhases = (
+				7FB746CB04961F8A672E88AF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2B2833EEACAA8C26C4FEF9D6 /* PBXTargetDependency */,
+			);
+			name = XJTUToolboxIOSTests;
+			packageProductDependencies = (
+			);
+			productName = XJTUToolboxIOSTests;
+			productReference = 0222205F01D0A6E972EDD7C5 /* XJTUToolboxIOSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -137,6 +178,7 @@
 			projectRoot = "";
 			targets = (
 				6828FA35A10F30F1F5670216 /* XJTUToolboxIOS */,
+				714AA2BB170891E02B53113D /* XJTUToolboxIOSTests */,
 			);
 		};
 /* End PBXProject section */
@@ -188,7 +230,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7FB746CB04961F8A672E88AF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3B067570C08F29BFD51793D2 /* FeatureCacheStoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2B2833EEACAA8C26C4FEF9D6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6828FA35A10F30F1F5670216 /* XJTUToolboxIOS */;
+			targetProxy = 876DF25C69CD0825BB3412FE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		06BDB6B377C9293D9EE8E38B /* Debug */ = {
@@ -279,6 +337,24 @@
 			};
 			name = Debug;
 		};
+		40339B8FF4B90E086FD44573 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.xjtu.toolbox.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/XJTUToolboxIOS.app/XJTUToolboxIOS";
+			};
+			name = Debug;
+		};
 		8DF7BAEBA19C5B43AF2213A9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -360,6 +436,24 @@
 			};
 			name = Release;
 		};
+		9D56FDB51C57543B0FE3D310 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.xjtu.toolbox.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/XJTUToolboxIOS.app/XJTUToolboxIOS";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -368,6 +462,15 @@
 			buildConfigurations = (
 				06BDB6B377C9293D9EE8E38B /* Debug */,
 				98FF2C909F45E12849B8E4B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		810EE39853EF2EDF0BA714E9 /* Build configuration list for PBXNativeTarget "XJTUToolboxIOSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				40339B8FF4B90E086FD44573 /* Debug */,
+				9D56FDB51C57543B0FE3D310 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

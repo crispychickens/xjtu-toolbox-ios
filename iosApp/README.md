@@ -66,6 +66,16 @@ Local validation schemes:
 5. `XJTUToolboxIOS-RealPublicData` enters the `学辅` tab with preview auth, preview auth-gated features, and real public notices plus real public empty-room CDN data. This is the first no-account integration path and can validate empty-room campus/building/date/section filters without a live account.
 6. `XJTUToolboxIOS-RealFirstReleaseCore` uses saved/entered real CAS credentials with the real first-release repositories. Feature screens auto-attempt each load at most once per app lifetime; failures do not auto-retry on redraw or tab switching.
 
+The generated `XJTUToolboxIOSTests` target starts the iOS automated-test baseline. Run it through the main scheme:
+
+```bash
+xcodebuild test -project iosApp/XJTUToolboxIOS.xcodeproj \
+  -scheme XJTUToolboxIOS \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6'
+```
+
+Use `docs/ios-first-release-acceptance.md` as the evidence checklist before promoting a build beyond controlled alpha validation.
+
 Next integration step:
 
 1. Run `XJTUToolboxIOS-PreviewAccountChoice` when checking the account-type challenge UI and default undergraduate selection without a live account.
