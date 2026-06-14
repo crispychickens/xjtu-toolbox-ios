@@ -40,6 +40,7 @@ The app target is intentionally thin:
 - `Router.swift` owns tab and stack navigation.
 - `KeychainCredentialStore.swift` stores credentials in the iOS Keychain.
 - Live-account validation should use owner-entered credentials in the app's `SecureField`s and then restore them from the simulator Keychain for repeated agent-assisted runs. Do not put account names, passwords, verification codes, CAS tickets, or OAuth tokens in launch arguments, source files, logs, screenshots, or docs.
+- Auth network diagnostics compile only in Debug, require `-XJTUAuthNetworkDebug`, and log structural metadata rather than raw values or response text. Release archive validation enforces the first-release crash/log policy in `docs/ios-crash-log-policy.md`.
 - SwiftUI views keep the Android information architecture and visual density while using native iOS controls.
 - SwiftUI presentation stays restrained and task-first: primary information comes before secondary metadata, decorative icons are minimized, and equally important actions remain one step away.
 

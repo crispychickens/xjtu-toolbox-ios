@@ -304,14 +304,18 @@ final class KmpURLSessionHttpClient: XJTUToolboxShared.HttpClient {
             urlRequest.httpBody = Data(kotlinByteArray: body)
         }
 
+        #if DEBUG
         AuthNetworkDebugLog.request(
             request,
             actualHeaderNames: urlRequest.allHTTPHeaderFields?.keys.sorted() ?? [],
             actualCookieNames: urlRequest.actualCookieNames
         )
+        #endif
         session.dataTask(with: urlRequest) { data, response, error in
             if let error {
+                #if DEBUG
                 AuthNetworkDebugLog.error(request: request, error: error)
+                #endif
                 completionHandler(nil, error)
                 return
             }
@@ -319,12 +323,14 @@ final class KmpURLSessionHttpClient: XJTUToolboxShared.HttpClient {
             let httpResponse = response as? HTTPURLResponse
             let bodyData = data ?? Data()
             let bodyText = String(data: bodyData, encoding: .utf8) ?? bodyData.base64EncodedString()
+            #if DEBUG
             AuthNetworkDebugLog.response(
                 request: request,
                 response: httpResponse,
                 bodyText: bodyText,
                 cookieStorage: self.diagnosticCookieStorage
             )
+            #endif
             completionHandler(
                 HttpResponse(
                     code: Int32(httpResponse?.statusCode ?? -1),
@@ -574,83 +580,61 @@ private final class CasLoginRedirectDelegate: NSObject, URLSessionTaskDelegate {
     }
 }
 
-private enum AuthNetworkDebugLog {
-    private static let prefix = "[DEBUG-AUTH-2FA]"
-
-    static func request(
-        _ request: HttpRequest,
-        actualHeaderNames: [String] = [],
-        actualCookieNames: [String] = []
-    ) {
-        guard XjtuLaunchArguments.shouldLogAuthNetworkDebug else { return }
-        NSLog(
-            "%@ request %@ %@ bodyFields=%@ headerNames=%@ actualHeaderNames=%@ actualCookieNames=%@",
-            prefix,
-            request.method.name,
-            sanitizedURL(request.url),
-            bodyFields(request.body),
-            request.headers.keys.sorted().joined(separator: ","),
-            actualHeaderNames.joined(separator: ","),
-            actualCookieNames.joined(separator: ",")
-        )
-    }
-
-    static func response(
-        request: HttpRequest,
-        response: HTTPURLResponse?,
-        bodyText: String,
-        cookieStorage: HTTPCookieStorage?
-    ) {
-        guard XjtuLaunchArguments.shouldLogAuthNetworkDebug else { return }
-        let cookieNames = (cookieStorage?.cookies ?? [])
-            .map(\.name)
-            .sorted()
-            .joined(separator: ",")
-        NSLog(
-            "%@ response %@ %@ -> code=%d final=%@ redirect=%@ redirectKeys=%@ redirectHasToken=%@ body=%@ responseHeaderNames=%@ cookieNames=%@",
-            prefix,
-            request.method.name,
-            sanitizedURL(request.url),
-            response?.statusCode ?? -1,
-            sanitizedURL(response?.url?.absoluteString ?? request.url),
-            sanitizedURL(redirectLocation(response) ?? ""),
-            parameterNames(redirectLocation(response)),
-            containsParameter(redirectLocation(response), named: "token") ? "true" : "false",
-            classify(bodyText),
-            response?.allHeaderFields.keys.compactMap { $0 as? String }.sorted().joined(separator: ",") ?? "",
-            cookieNames
-        )
-    }
-
-    static func error(request: HttpRequest, error: Error) {
-        guard XjtuLaunchArguments.shouldLogAuthNetworkDebug else { return }
-        NSLog(
-            "%@ error %@ %@ message=%@",
-            prefix,
-            request.method.name,
-            sanitizedURL(request.url),
-            error.localizedDescription
-        )
-    }
-
-    private static func sanitizedURL(_ raw: String) -> String {
+#if DEBUG
+enum AuthNetworkDebugMetadata {
+    static func sanitizedURL(_ raw: String) -> String {
         if raw.isEmpty { return "" }
         guard let components = URLComponents(string: raw) else { return "<bad-url>" }
-        return "\(components.host ?? "<no-host>")\(components.path)"
+        let pathSegmentCount = components.path.split(separator: "/").count
+        return "\(components.host ?? "<no-host>") pathSegments=\(pathSegmentCount)"
     }
 
-    private static func redirectLocation(_ response: HTTPURLResponse?) -> String? {
-        response?.allHeaderFields.first { key, _ in
-            (key as? String)?.caseInsensitiveCompare("Location") == .orderedSame
-        }?.value as? String
-    }
-
-    private static func parameterNames(_ raw: String?) -> String {
+    static func parameterNames(_ raw: String?) -> String {
         parameterNamesFromRawURL(raw).sorted().joined(separator: ",")
     }
 
-    private static func containsParameter(_ raw: String?, named target: String) -> Bool {
+    static func containsParameter(_ raw: String?, named target: String) -> Bool {
         parameterNamesFromRawURL(raw).contains { $0.equalsIgnoringCase(target) }
+    }
+
+    static func bodyFields(_ body: KotlinByteArray?) -> String {
+        guard let body else { return "" }
+        let text = String(data: Data(kotlinByteArray: body), encoding: .utf8) ?? ""
+        return bodyFieldNames(text)
+    }
+
+    static func bodyFieldNames(_ text: String) -> String {
+        if text.hasPrefix("{") {
+            return text.keysFromJsonObject().sorted().joined(separator: ",")
+        }
+        let pairs = text.split(separator: "&")
+        guard !pairs.isEmpty, pairs.allSatisfy({ $0.contains("=") }) else {
+            return "<non-form>"
+        }
+        return pairs
+            .compactMap { pair in pair.split(separator: "=", maxSplits: 1).first.map(String.init) }
+            .map { $0.removingPercentEncoding ?? $0 }
+            .sorted()
+            .joined(separator: ",")
+    }
+
+    static func classify(_ bodyText: String) -> String {
+        if bodyText.localizedCaseInsensitiveContains("<el-alert") {
+            return "cas-alert-html"
+        }
+        if bodyText.localizedCaseInsensitiveContains("secState")
+            || bodyText.localizedCaseInsensitiveContains("Safety Verify") {
+            return "safety-html"
+        }
+        if bodyText.localizedCaseInsensitiveContains("<html") {
+            return bodyText.localizedCaseInsensitiveContains("cas/login")
+                ? "login-html"
+                : "html"
+        }
+        if bodyText.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{") {
+            return "json-keys=\(bodyText.keysFromJsonObject().sorted().joined(separator: ","))"
+        }
+        return "text-len=\(bodyText.count)"
     }
 
     private static func parameterNamesFromRawURL(_ raw: String?) -> [String] {
@@ -671,97 +655,78 @@ private enum AuthNetworkDebugLog {
             : fragment
         return URLComponents(string: "x://x?\(query)")?.queryItems?.map(\.name) ?? []
     }
+}
 
-    private static func bodyFields(_ body: KotlinByteArray?) -> String {
-        guard let body else { return "" }
-        let text = String(data: Data(kotlinByteArray: body), encoding: .utf8) ?? ""
-        if text.hasPrefix("{") {
-            return text.keysFromJsonObject().joined(separator: ",")
-        }
-        return text
-            .split(separator: "&")
-            .compactMap { pair in pair.split(separator: "=", maxSplits: 1).first.map(String.init) }
-            .map { $0.removingPercentEncoding ?? $0 }
-            .joined(separator: ",")
+private enum AuthNetworkDebugLog {
+    private static let prefix = "[DEBUG-AUTH-2FA]"
+
+    static func request(
+        _ request: HttpRequest,
+        actualHeaderNames: [String] = [],
+        actualCookieNames: [String] = []
+    ) {
+        guard XjtuLaunchArguments.shouldLogAuthNetworkDebug else { return }
+        NSLog(
+            "%@ request %@ %@ bodyFields=%@ headerNames=%@ actualHeaderNames=%@ actualCookieNames=%@",
+            prefix,
+            request.method.name,
+            AuthNetworkDebugMetadata.sanitizedURL(request.url),
+            AuthNetworkDebugMetadata.bodyFields(request.body),
+            request.headers.keys.sorted().joined(separator: ","),
+            actualHeaderNames.joined(separator: ","),
+            actualCookieNames.joined(separator: ",")
+        )
     }
 
-    private static func classify(_ bodyText: String) -> String {
-        if let alert = bodyText.casAlertTitle {
-            return "alert=\(alert)"
-        }
-        if bodyText.localizedCaseInsensitiveContains("secState")
-            || bodyText.localizedCaseInsensitiveContains("Safety Verify") {
-            return "safety-html"
-        }
-        if bodyText.localizedCaseInsensitiveContains("<html") {
-            if bodyText.localizedCaseInsensitiveContains("cas/login") {
-                return "login-html"
-            }
-            if let title = bodyText.htmlTitle {
-                return "html-title=\(title) html-text=\(bodyText.htmlSnippet)"
-            }
-            return "html-text=\(bodyText.htmlSnippet)"
-        }
-        if bodyText.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{") {
-            return bodyText.casJsonSummary
-        }
-        return "text-len=\(bodyText.count)"
+    static func response(
+        request: HttpRequest,
+        response: HTTPURLResponse?,
+        bodyText: String,
+        cookieStorage: HTTPCookieStorage?
+    ) {
+        guard XjtuLaunchArguments.shouldLogAuthNetworkDebug else { return }
+        let cookieNames = (cookieStorage?.cookies ?? [])
+            .map(\.name)
+            .sorted()
+            .joined(separator: ",")
+        let redirect = redirectLocation(response)
+        NSLog(
+            "%@ response %@ %@ -> code=%d final=%@ redirect=%@ redirectKeys=%@ redirectHasToken=%@ body=%@ responseHeaderNames=%@ cookieNames=%@",
+            prefix,
+            request.method.name,
+            AuthNetworkDebugMetadata.sanitizedURL(request.url),
+            response?.statusCode ?? -1,
+            AuthNetworkDebugMetadata.sanitizedURL(response?.url?.absoluteString ?? request.url),
+            AuthNetworkDebugMetadata.sanitizedURL(redirect ?? ""),
+            AuthNetworkDebugMetadata.parameterNames(redirect),
+            AuthNetworkDebugMetadata.containsParameter(redirect, named: "token") ? "true" : "false",
+            AuthNetworkDebugMetadata.classify(bodyText),
+            response?.allHeaderFields.keys.compactMap { $0 as? String }.sorted().joined(separator: ",") ?? "",
+            cookieNames
+        )
+    }
+
+    static func error(request: HttpRequest, error: Error) {
+        guard XjtuLaunchArguments.shouldLogAuthNetworkDebug else { return }
+        let nsError = error as NSError
+        NSLog(
+            "%@ error %@ %@ domain=%@ code=%d",
+            prefix,
+            request.method.name,
+            AuthNetworkDebugMetadata.sanitizedURL(request.url),
+            nsError.domain,
+            nsError.code
+        )
+    }
+
+    private static func redirectLocation(_ response: HTTPURLResponse?) -> String? {
+        response?.allHeaderFields.first { key, _ in
+            (key as? String)?.caseInsensitiveCompare("Location") == .orderedSame
+        }?.value as? String
     }
 }
 
 private extension String {
-    var casAlertTitle: String? {
-        let pattern = #"<el-alert\b[^>]*\btitle=["']([^"']+)["'][^>]*>"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
-            return nil
-        }
-        let range = NSRange(startIndex..<endIndex, in: self)
-        guard let match = regex.firstMatch(in: self, range: range), match.numberOfRanges > 1 else {
-            return nil
-        }
-        return Range(match.range(at: 1), in: self).map { String(self[$0]) }
-    }
-
-    var casJsonSummary: String {
-        let code = firstJsonScalar(named: "code") ?? "?"
-        let status = firstJsonScalar(named: "status")
-        let need = firstJsonScalar(named: "need")
-        return [
-            "json(code=\(code)",
-            status.map { "status=\($0)" },
-            need.map { "need=\($0)" },
-        ]
-        .compactMap { $0 }
-        .joined(separator: ",") + ")"
-    }
-
-    var htmlTitle: String? {
-        let pattern = #"<title[^>]*>(.*?)</title>"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
-            return nil
-        }
-        let range = NSRange(startIndex..<endIndex, in: self)
-        guard let match = regex.firstMatch(in: self, range: range), match.numberOfRanges > 1 else {
-            return nil
-        }
-        return Range(match.range(at: 1), in: self).map { String(self[$0]).normalizedHtmlSnippet }
-    }
-
-    var htmlSnippet: String {
-        replacingOccurrences(of: #"<[^>]+>"#, with: " ", options: .regularExpression)
-            .normalizedHtmlSnippet
-    }
-
-    private var normalizedHtmlSnippet: String {
-        replacingOccurrences(of: "&nbsp;", with: " ")
-            .replacingOccurrences(of: "\n", with: " ")
-            .replacingOccurrences(of: "\t", with: " ")
-            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .prefix(120)
-            .description
-    }
-
     func keysFromJsonObject() -> [String] {
         guard let regex = try? NSRegularExpression(pattern: #""([^"\\]+)"\s*:"#) else {
             return []
@@ -771,20 +736,8 @@ private extension String {
             Range(match.range(at: 1), in: self).map { String(self[$0]) }
         }
     }
-
-    private func firstJsonScalar(named name: String) -> String? {
-        let pattern = #""\#(NSRegularExpression.escapedPattern(for: name))"\s*:\s*("[^"]*"|true|false|-?\d+)"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
-            return nil
-        }
-        let range = NSRange(startIndex..<endIndex, in: self)
-        guard let match = regex.firstMatch(in: self, range: range), match.numberOfRanges > 1 else {
-            return nil
-        }
-        guard let valueRange = Range(match.range(at: 1), in: self) else { return nil }
-        return String(self[valueRange]).trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-    }
 }
+#endif
 
 private extension KmpURLSessionHttpClient {
     static func defaultSession(cookieStorage: HTTPCookieStorage? = nil) -> URLSession {

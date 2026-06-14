@@ -59,6 +59,14 @@ archive_architectures="$(plutil -extract ApplicationProperties.Architectures jso
 [[ "$archive_build" == "$build_number" ]] || fail "archive and app build numbers differ"
 [[ "$archive_architectures" == '["arm64"]' ]] || fail "archive architecture must be arm64: $archive_architectures"
 [[ "$(lipo -archs "$executable")" == "arm64" ]] || fail "app executable must contain only arm64"
+if grep -aRFq '[DEBUG-AUTH-2FA]' "$app_path"; then
+  fail "Release app bundle contains the debug-auth logging marker"
+fi
+for crash_sdk in Sentry Crashlytics FirebaseCrashlytics PLCrashReporter; do
+  if grep -aRFq "$crash_sdk" "$app_path"; then
+    fail "Release app bundle contains an unreviewed crash-reporting SDK marker: $crash_sdk"
+  fi
+done
 
 plutil -lint "$privacy_manifest" >/dev/null
 [[ "$(plist_value "$privacy_manifest" NSPrivacyTracking)" == "false" ]] || fail "privacy manifest must disable tracking"
@@ -94,5 +102,6 @@ echo "  bundle: $bundle_id"
 echo "  version: $marketing_version ($build_number)"
 echo "  platform: $platform_name / arm64 / iPhone-only"
 echo "  privacy: no tracking or collected data; UserDefaults CA92.1"
+echo "  diagnostics: debug-auth logging and unreviewed crash SDK markers absent"
 echo "  dSYM: UUID matches app executable"
 echo "  signing required: $require_signed"

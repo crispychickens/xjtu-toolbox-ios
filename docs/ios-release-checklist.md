@@ -42,8 +42,11 @@ The archive validator checks:
 - bundle identity, `major.minor.patch` marketing version, positive build number, minimum iOS version, and iPhone-only device family;
 - Release device platform and arm64 executable;
 - privacy manifest declarations and scoped ATS exception;
+- absence of the debug-auth logging marker and known unreviewed crash-reporting SDK markers;
 - matching app executable and dSYM UUIDs;
 - signing identity/team and `codesign` verification when invoked with `REQUIRE_SIGNED=1`.
+
+Use `docs/ios-crash-log-policy.md` for allowed Debug diagnostic metadata, Release restrictions, symbolication, and incident handling.
 
 ## Signed Archive Gate
 
@@ -64,5 +67,5 @@ Before the first TestFlight upload:
 4. Upload the signed build and wait for App Store Connect processing.
 5. Install from TestFlight on a real device and execute `docs/ios-first-release-acceptance.md`.
 6. Verify upgrade behavior from the previous TestFlight build, including no Debug/preview stale-cache read.
-7. Verify crash/log policy and inspect device logs for credentials, cookies, tickets, verification codes, and debug-auth output.
+7. Verify `docs/ios-crash-log-policy.md` on the TestFlight build and inspect device logs for credentials, cookies, tickets, verification codes, and debug-auth output.
 8. Promote only after every mandatory acceptance gate has release evidence.

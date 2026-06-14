@@ -21,6 +21,7 @@
 		6D7BC4A8650609B2FE9A1B7F /* KmpPlatformAdapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26834A78933293B7DB2F0F3 /* KmpPlatformAdapters.swift */; };
 		703D3EA80FA7B0C88E73E0E4 /* LoginAttemptStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333E176D39B68B3FCD7C8293 /* LoginAttemptStore.swift */; };
 		7B9BB4163EDC61A517315473 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85B3ACEB9C88F39C6780A839 /* AuthStore.swift */; };
+		86D742885E4D9693687170B3 /* ReleaseLogPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92FEEBC093FB6A547424FCD /* ReleaseLogPolicyTests.swift */; };
 		892F0565A1FB4C41C8D12637 /* SharedBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CD66D62782BAEB3C88E108 /* SharedBridge.swift */; };
 		9863195FE411E2511EC80309 /* AccessModeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558FB1C2ACE9A3E4D637FDD7 /* AccessModeStore.swift */; };
 		AE37C8D8A111E8319EB8F359 /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A02D13A53DCD13ECCF373439 /* AppDependencies.swift */; };
@@ -69,6 +70,7 @@
 		997ED01D6FE992DCA6057CDB /* XJTUToolboxIOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = XJTUToolboxIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A02D13A53DCD13ECCF373439 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
 		A4CD66D62782BAEB3C88E108 /* SharedBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedBridge.swift; sourceTree = "<group>"; };
+		B92FEEBC093FB6A547424FCD /* ReleaseLogPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseLogPolicyTests.swift; sourceTree = "<group>"; };
 		C26834A78933293B7DB2F0F3 /* KmpPlatformAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpPlatformAdapters.swift; sourceTree = "<group>"; };
 		D07C264B009C6E4C68E653DD /* KmpBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpBridge.swift; sourceTree = "<group>"; };
 		D64D7AC29C1FD92C09E9A64D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -115,6 +117,7 @@
 				E5CDFBC9F0ACD77BE25B8DEA /* FeatureCacheStoreTests.swift */,
 				2D357B600567EF8448C073B1 /* KmpBridgeContractTests.swift */,
 				713ADEB820B8FD722F533B59 /* LaunchArgumentsTests.swift */,
+				B92FEEBC093FB6A547424FCD /* ReleaseLogPolicyTests.swift */,
 			);
 			path = XJTUToolboxIOSTests;
 			sourceTree = "<group>";
@@ -304,6 +307,7 @@
 				3B067570C08F29BFD51793D2 /* FeatureCacheStoreTests.swift in Sources */,
 				4593CBBF2D96862FD9D9608D /* KmpBridgeContractTests.swift in Sources */,
 				6AD94D4B629286DA79809E2D /* LaunchArgumentsTests.swift in Sources */,
+				86D742885E4D9693687170B3 /* ReleaseLogPolicyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
