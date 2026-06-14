@@ -23,6 +23,7 @@
 		892F0565A1FB4C41C8D12637 /* SharedBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4CD66D62782BAEB3C88E108 /* SharedBridge.swift */; };
 		9863195FE411E2511EC80309 /* AccessModeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558FB1C2ACE9A3E4D637FDD7 /* AccessModeStore.swift */; };
 		AE37C8D8A111E8319EB8F359 /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A02D13A53DCD13ECCF373439 /* AppDependencies.swift */; };
+		C731F1B3403222C1FF49E21F /* AuthStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6035B9A51DDD3B89D349EA3B /* AuthStoreTests.swift */; };
 		CA58983D6D297E9D0A46AEEB /* FeatureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110296FB843705633BA1FE46 /* FeatureStore.swift */; };
 		D84A8C977E3900E0E326B4DB /* FeatureCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A66E4AD9702D1A22A56420 /* FeatureCacheStore.swift */; };
 		F746E79F02B6CB1224E5C1CA /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63AD938F739DB7F22302947 /* Router.swift */; };
@@ -50,6 +51,7 @@
 		55CAB546CB4BDF9B47BFBC2E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		596445D6F764C720DA70C285 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		5FF6EEA67BCE3B60118734FF /* XJTUToolboxIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XJTUToolboxIOSApp.swift; sourceTree = "<group>"; };
+		6035B9A51DDD3B89D349EA3B /* AuthStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStoreTests.swift; sourceTree = "<group>"; };
 		713ADEB820B8FD722F533B59 /* LaunchArgumentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchArgumentsTests.swift; sourceTree = "<group>"; };
 		85B3ACEB9C88F39C6780A839 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		997ED01D6FE992DCA6057CDB /* XJTUToolboxIOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = XJTUToolboxIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -85,6 +87,7 @@
 		B2336988483D058043155A8D /* XJTUToolboxIOSTests */ = {
 			isa = PBXGroup;
 			children = (
+				6035B9A51DDD3B89D349EA3B /* AuthStoreTests.swift */,
 				E5CDFBC9F0ACD77BE25B8DEA /* FeatureCacheStoreTests.swift */,
 				713ADEB820B8FD722F533B59 /* LaunchArgumentsTests.swift */,
 			);
@@ -237,6 +240,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C731F1B3403222C1FF49E21F /* AuthStoreTests.swift in Sources */,
 				3B067570C08F29BFD51793D2 /* FeatureCacheStoreTests.swift in Sources */,
 				6AD94D4B629286DA79809E2D /* LaunchArgumentsTests.swift in Sources */,
 			);
