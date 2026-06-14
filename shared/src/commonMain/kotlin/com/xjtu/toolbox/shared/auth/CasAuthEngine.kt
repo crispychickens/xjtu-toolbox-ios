@@ -4,6 +4,10 @@ import com.xjtu.toolbox.shared.network.HttpClient
 import com.xjtu.toolbox.shared.network.HttpMethod
 import com.xjtu.toolbox.shared.network.HttpRequest
 import com.xjtu.toolbox.shared.network.HttpResponse
+import com.xjtu.toolbox.shared.parsing.JsonParser
+import com.xjtu.toolbox.shared.parsing.JsonValue
+import com.xjtu.toolbox.shared.parsing.asObjectOrNull
+import com.xjtu.toolbox.shared.parsing.asStringOrNull
 
 data class CasAuthConfig(
     val loginUrl: String = "https://login.xjtu.edu.cn/cas/login",
@@ -470,11 +474,16 @@ class CasAuthEngine(
             return EngineLoginResult.NetworkError("CAS 返回 HTTP ${landing.code}")
         }
         val username = pendingCredentials?.username ?: "cas"
-        val siteHeaders = if (site == SiteKey.GRADE) {
-            landing.finalUrl.mobileJwappAuthHeaders()
-                ?: return EngineLoginResult.ServiceChanged("移动教务 OAuth 响应缺少 token")
-        } else {
-            null
+        val siteHeaders = when (site) {
+            SiteKey.GRADE -> {
+                landing.finalUrl.mobileJwappAuthHeaders()
+                    ?: return EngineLoginResult.ServiceChanged("移动教务 OAuth 响应缺少 token")
+            }
+            SiteKey.COUPON -> {
+                landing.couponCallbackParams()?.let { exchangeCouponCodeForHeaders(it) }
+                    ?: return EngineLoginResult.ServiceChanged("加餐券 OAuth 响应缺少授权码")
+            }
+            else -> null
         }
         resetPending()
         return if (siteHeaders != null) {
@@ -491,6 +500,8 @@ class CasAuthEngine(
             -> "https://jwxt.xjtu.edu.cn/jwapp/sys/homeapp/index.do"
             SiteKey.GRADE -> "https://org.xjtu.edu.cn/openplatform/oauth/authorize?appId=1370&redirectUri=http://jwapp.xjtu.edu.cn/app/index&responseType=code&scope=user_info&state=1234"
             SiteKey.CAMPUS_CARD -> "https://ncard.xjtu.edu.cn/berserker-base/redirect?type=login&loginFrom=h5&synAccessSource=h5"
+            SiteKey.LIBRARY -> "http://rg.lib.xjtu.edu.cn:8086/seat/"
+            SiteKey.COUPON -> "https://login.xjtu.edu.cn/cas/oauth2.0/authorize?response_type=code&client_id=1596&redirect_uri=https%3A%2F%2Forg.xjtu.edu.cn%2Fopenplatform%2Foauth%2Fauthorizesw%3Fredirect_uri%3Dbase64aHR0cHM6Ly9lZ2MueGp0dS5lZHUuY24vcGFnZS9jYXMvcmVjZWl2ZUNhcy5odG1sP3ZlcnNpb249U0FGVF9WRVJTSU9O&state=1995"
             else -> null
         }
 
@@ -552,6 +563,76 @@ class CasAuthEngine(
         )
     }
 
+    private suspend fun exchangeCouponCodeForHeaders(params: CouponCallbackParams): Map<String, String> {
+        val response = activeHttpClient.execute(
+            HttpRequest(
+                url = "https://egc.xjtu.edu.cn/sso/login?code=${urlEncode(params.code)}" +
+                    "&userType=${urlEncode(params.userType)}" +
+                    "&employeeNo=${urlEncode(params.employeeNo)}",
+                method = HttpMethod.POST,
+                headers = mapOf(
+                    "Accept" to "application/json, text/javascript, */*; q=0.01",
+                    "Accept-Language" to "zh-CN,zh;q=0.9,en;q=0.8",
+                    "Content-Type" to "application/json;charset=UTF-8",
+                    "Origin" to "https://egc.xjtu.edu.cn",
+                    "Referer" to "https://egc.xjtu.edu.cn/page/cas/receiveCas.html?version=SAFT_VERSION",
+                    "User-Agent" to COUPON_BROWSER_UA,
+                    "X-Requested-With" to "XMLHttpRequest",
+                ),
+                body = """{"json":true}""".encodeToByteArray(),
+            ),
+        )
+        if (!response.isSuccessful) return emptyMap()
+        val token = response.headers["Authorization"]?.normalizeBearerToken()
+            ?: response.bodyText.couponToken()
+            ?: return emptyMap()
+        return mapOf(
+            "Authorization" to token,
+            "User-Agent" to COUPON_BROWSER_UA,
+        )
+    }
+
+    private fun HttpResponse.couponCallbackParams(): CouponCallbackParams? =
+        finalUrl.couponCallbackParams() ?: bodyText.couponCallbackParams()
+
+    private fun String.couponCallbackParams(): CouponCallbackParams? {
+        if (isBlank()) return null
+        val code = urlParameter("code") ?: jsonLikeField("code") ?: return null
+        return CouponCallbackParams(
+            code = code,
+            userType = urlParameter("userType") ?: jsonLikeField("userType").orEmpty(),
+            employeeNo = urlParameter("employeeNo") ?: jsonLikeField("employeeNo").orEmpty(),
+        )
+    }
+
+    private fun String.couponToken(): String? {
+        val root = runCatching { JsonParser(this).parse() }.getOrNull()
+        if (root != null) findCouponToken(root)?.let { return it }
+        return Regex("""eyJ[A-Za-z0-9_\-.]+""").find(this)?.value?.normalizeBearerToken()
+    }
+
+    private fun findCouponToken(value: JsonValue?): String? {
+        if (value == null) return null
+        val primitive = value.asStringOrNull()?.normalizeBearerToken()
+        if (!primitive.isNullOrBlank() && primitive.startsWith("eyJ")) return primitive
+        value.asObjectOrNull()?.let { obj ->
+            listOf("Authorization", "authorization", "token", "accessToken", "access_token", "jwt", "data").forEach { key ->
+                findCouponToken(obj[key])?.let { return it }
+            }
+            obj.values.forEach { nested -> findCouponToken(nested)?.let { return it } }
+        }
+        return null
+    }
+
+    private fun String.jsonLikeField(name: String): String? =
+        Regex(""""$name"\s*:\s*"([^"]+)"""").find(this)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.takeIf { it.isNotBlank() }
+
+    private fun String.normalizeBearerToken(): String =
+        trim().removePrefix("Bearer ").removePrefix("bearer ")
+
     private fun String.urlParameter(name: String): String? {
         val query = substringAfter("?", missingDelimiterValue = "")
         val fragment = substringAfter("#", missingDelimiterValue = "")
@@ -569,6 +650,12 @@ class CasAuthEngine(
             }
             .firstOrNull()
     }
+
+    private data class CouponCallbackParams(
+        val code: String,
+        val userType: String,
+        val employeeNo: String,
+    )
 
     private fun String.urlDecode(): String {
         val bytes = mutableListOf<Byte>()
@@ -800,5 +887,7 @@ class CasAuthEngine(
         private const val MAX_GRADE_CAS_OAUTH_REDIRECTS = 4
         private const val MOBILE_JWAPP_UA =
             "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+        private const val COUPON_BROWSER_UA =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0"
     }
 }

@@ -30,7 +30,7 @@ object CampusCardNcardParser {
         requireOk(root, "campus card transactions")
         val data = root["data"]?.asObjectOrNull()
             ?: error("campus card transactions response data missing")
-        val total = data["total"]?.asIntOrNull() ?: 0
+        val declaredTotal = data["total"]?.asIntOrNull()
         val records = data["records"]?.asArrayOrNull()
             ?: error("campus card transactions response records missing")
         val transactions = records
@@ -46,10 +46,14 @@ object CampusCardNcardParser {
                     merchant = merchantName(record),
                     amountYuan = if (kind == TransactionKind.INCOME) amount else -amount,
                     kind = kind,
+                    balanceAfterYuan = record["cardBalance"]?.asLongOrNull()?.let(::centsToYuan),
                 )
             }
 
-        return CampusCardTransactionPage(total = total, records = transactions)
+        return CampusCardTransactionPage(
+            total = maxOf(declaredTotal ?: transactions.size, transactions.size),
+            records = transactions,
+        )
     }
 
     private fun parseRoot(json: String, expectedPayload: String): Map<String, JsonValue> {

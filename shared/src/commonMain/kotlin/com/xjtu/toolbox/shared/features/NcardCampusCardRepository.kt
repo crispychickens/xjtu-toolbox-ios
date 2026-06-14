@@ -32,7 +32,14 @@ class NcardCampusCardRepository(
         session: SiteSession,
         page: Int,
         pageSize: Int,
-    ): List<CampusCardTransaction> {
+    ): List<CampusCardTransaction> =
+        transactionPage(session, page, pageSize).records
+
+    override suspend fun transactionPage(
+        session: SiteSession,
+        page: Int,
+        pageSize: Int,
+    ): CampusCardTransactionPage {
         require(page >= 1) { "page must be >= 1" }
         require(pageSize in 1..50) { "pageSize must be in 1..50" }
 
@@ -46,7 +53,7 @@ class NcardCampusCardRepository(
         if (!response.isSuccessful) {
             error("校园卡流水请求失败: HTTP ${response.code}")
         }
-        return CampusCardNcardParser.parseTransactions(response.bodyText).records
+        return CampusCardNcardParser.parseTransactions(response.bodyText)
     }
 
     private fun transactionUrl(page: Int, pageSize: Int): String {

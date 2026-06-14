@@ -484,6 +484,61 @@ class CasAuthEngineTest {
     }
 
     @Test
+    fun couponSiteVerificationExchangesOauthCodeForSessionHeaders() = runTest {
+        val client = QueueHttpClient(
+            HttpResponse(
+                code = 200,
+                finalUrl = "https://login.xjtu.edu.cn/cas/mfa/detect",
+                bodyText = """{"code":0,"data":{"state":"mfa-state","need":false}}""",
+            ),
+            HttpResponse(
+                code = 302,
+                finalUrl = "https://login.xjtu.edu.cn/cas/login?service=coupon",
+                headers = mapOf(
+                    "Location" to "https://login.xjtu.edu.cn/cas/oauth2.0/callbackAuthorize?ticket=ST-1",
+                    "Set-Cookie" to "TGC=opaque; Path=/cas; Secure; HttpOnly",
+                ),
+            ),
+            HttpResponse(
+                code = 200,
+                finalUrl = "https://egc.xjtu.edu.cn/page/cas/receiveCas.html?code=CODE-1&userType=student&employeeNo=3124000000",
+                bodyText = "<html><title>我的卡券</title></html>",
+            ),
+            HttpResponse(
+                code = 200,
+                finalUrl = "https://egc.xjtu.edu.cn/sso/login",
+                bodyText = """{"code":200,"data":{"access_token":"eyJcoupon.token","username":"student"}}""",
+            ),
+        )
+        val engine = casEngine(client)
+
+        val result = engine.beginSiteVerification(
+            credentials = Credentials("3124000000", "secret"),
+            accessMode = AccessMode.NORMAL,
+            site = SiteKey.COUPON,
+            context = SiteVerificationContext(
+                finalUrl = "https://login.xjtu.edu.cn/cas/login?service=coupon",
+                bodyText = loginPage(mfaEnabled = true),
+            ),
+        )
+
+        val success = assertIs<EngineLoginResult.SiteSessionSuccess>(result)
+        assertEquals(SiteKey.COUPON, success.site)
+        assertEquals("eyJcoupon.token", success.headers["Authorization"])
+        assertTrue(success.headers["User-Agent"]?.contains("Chrome") == true)
+        assertEquals(
+            "https://login.xjtu.edu.cn/cas/oauth2.0/authorize?response_type=code&client_id=1596&redirect_uri=https%3A%2F%2Forg.xjtu.edu.cn%2Fopenplatform%2Foauth%2Fauthorizesw%3Fredirect_uri%3Dbase64aHR0cHM6Ly9lZ2MueGp0dS5lZHUuY24vcGFnZS9jYXMvcmVjZWl2ZUNhcy5odG1sP3ZlcnNpb249U0FGVF9WRVJTSU9O&state=1995",
+            client.requests[2].url,
+        )
+        val tokenRequest = client.requests[3]
+        assertEquals(HttpMethod.POST, tokenRequest.method)
+        assertTrue(tokenRequest.url.contains("https://egc.xjtu.edu.cn/sso/login?code=CODE-1"))
+        assertTrue(tokenRequest.url.contains("userType=student"))
+        assertTrue(tokenRequest.url.contains("employeeNo=3124000000"))
+        assertEquals(4, client.requests.size)
+    }
+
+    @Test
     fun siteVerificationFallsBackToCasRedirectWhenJwxtLandingStillReturnsLoginPage() = runTest {
         val client = QueueHttpClient(
             HttpResponse(

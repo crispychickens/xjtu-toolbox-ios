@@ -56,17 +56,88 @@ class DefaultCoreFeatureServiceTest {
     }
 
     @Test
+    fun gradeDetailRoutesThroughGradeSession() = runTest {
+        val auth = RecordingAuthManager()
+        val service = service(auth = auth)
+
+        val detail = service.gradeDetail("grade-1")
+
+        assertEquals(listOf(SiteKey.GRADE), auth.requestedSites)
+        assertEquals("高等数学", detail.courseName)
+        assertEquals(2, detail.items.size)
+    }
+
+    @Test
     fun scheduleAndCampusCardHideSiteSessionFromCallers() = runTest {
         val auth = RecordingAuthManager()
         val service = service(auth = auth)
 
         service.schedule(termCode = "2025-2026-1")
-        service.campusCard(page = 1, pageSize = 10)
+        val campusCard = service.campusCard(page = 1, pageSize = 10)
 
         assertEquals(
             listOf(SiteKey.SCHEDULE, SiteKey.CAMPUS_CARD),
             auth.requestedSites,
         )
+        assertEquals(37, campusCard.totalTransactions)
+    }
+
+    @Test
+    fun librarySeatsRoutesThroughLibrarySession() = runTest {
+        val auth = RecordingAuthManager()
+        val service = service(auth = auth)
+
+        val snapshot = service.librarySeats(areaCode = "north4middle")
+
+        assertEquals(listOf(SiteKey.LIBRARY), auth.requestedSites)
+        assertEquals("north4middle", snapshot.selectedAreaCode)
+        assertEquals("北楼四层中间", snapshot.recommendedAreas.first().name)
+    }
+
+    @Test
+    fun couponsRouteThroughCouponSession() = runTest {
+        val auth = RecordingAuthManager()
+        val service = service(auth = auth)
+
+        val page = service.coupons(filter = CouponFilter.USABLE, page = 1, pageSize = 10)
+
+        assertEquals(listOf(SiteKey.COUPON), auth.requestedSites)
+        assertEquals(CouponFilter.USABLE, page.filter)
+        assertEquals(1, page.total)
+        assertEquals("康桥苑加餐券", page.records.single().voucherName)
+    }
+
+    @Test
+    fun couponsRejectInvalidPagingBeforeOpeningSession() = runTest {
+        val auth = RecordingAuthManager()
+        val service = service(auth = auth)
+
+        kotlin.test.assertFailsWith<IllegalArgumentException> {
+            service.coupons(filter = CouponFilter.USABLE, page = 0, pageSize = 10)
+        }
+        kotlin.test.assertFailsWith<IllegalArgumentException> {
+            service.coupons(filter = CouponFilter.USABLE, page = 1, pageSize = 101)
+        }
+        assertEquals(emptyList(), auth.requestedSites)
+    }
+
+    @Test
+    fun schoolCoursesRouteThroughScheduleSession() = runTest {
+        val auth = RecordingAuthManager()
+        val service = service(auth = auth)
+
+        val page = service.schoolCourses(
+            courseName = "高等数学",
+            teacher = "",
+            campusCode = "1",
+            weekday = 3,
+            page = 1,
+            pageSize = 20,
+        )
+
+        assertEquals(listOf(SiteKey.SCHEDULE), auth.requestedSites)
+        assertEquals("高等数学", page.records.single().courseName)
+        assertEquals(1, page.total)
     }
 
     @Test
@@ -80,6 +151,14 @@ class DefaultCoreFeatureServiceTest {
         assertEquals(emptyList(), snapshot.textbooks)
     }
 
+    @Test
+    fun noticePagePreservesRepositoryTotal() = runTest {
+        val page = service().noticePage(page = 1)
+
+        assertEquals(23, page.total)
+        assertEquals(2, page.records.size)
+    }
+
     private fun service(
         auth: RecordingAuthManager = RecordingAuthManager(),
         scheduleRepository: ScheduleRepository = FakeScheduleRepository(),
@@ -90,6 +169,9 @@ class DefaultCoreFeatureServiceTest {
         campusCardRepository = FakeCampusCardRepository(),
         noticeRepository = FakeNoticeRepository(),
         emptyRoomRepository = FakeEmptyRoomRepository(),
+        librarySeatRepository = FakeLibrarySeatRepository(),
+        couponRepository = FakeCouponRepository(),
+        schoolCourseRepository = FakeSchoolCourseRepository(),
     )
 
     private fun round2(value: Double): Double =
@@ -179,6 +261,24 @@ private class FakeGradeRepository : GradeRepository {
         GradeItem("高等数学", "92", 3.0, 3.9),
         GradeItem("大学物理", "85", 2.0, 3.25),
     )
+
+    override suspend fun gradeDetail(session: SiteSession, gradeId: String): GradeDetail =
+        GradeDetail(
+            courseName = "高等数学",
+            score = "92",
+            credit = 3.0,
+            gradePoint = 3.9,
+            examType = "正常考试",
+            courseProperty = "专业基础课",
+            examProperty = "正常",
+            isReplacement = false,
+            isPassed = true,
+            specificReason = null,
+            items = listOf(
+                GradeDetailItem("平时成绩", 0.3, "95"),
+                GradeDetailItem("期末考试", 0.7, "91"),
+            ),
+        )
 }
 
 private class FakeCampusCardRepository : CampusCardRepository {
@@ -188,6 +288,13 @@ private class FakeCampusCardRepository : CampusCardRepository {
     override suspend fun transactions(session: SiteSession, page: Int, pageSize: Int): List<CampusCardTransaction> = listOf(
         CampusCardTransaction("2026-05-20 12:00", "康桥苑", -12.0, TransactionKind.EXPENSE),
     )
+
+    override suspend fun transactionPage(
+        session: SiteSession,
+        page: Int,
+        pageSize: Int,
+    ): CampusCardTransactionPage =
+        CampusCardTransactionPage(total = 37, records = transactions(session, page, pageSize))
 }
 
 private class FakeNoticeRepository : NoticeRepository {
@@ -195,10 +302,103 @@ private class FakeNoticeRepository : NoticeRepository {
         NoticeItem("关于考试安排的通知", "https://example.edu/1", "教务处", "2026-05-20"),
         NoticeItem("校园网络维护通知", "https://example.edu/2", "网信中心", "2026-05-19"),
     )
+
+    override suspend fun noticePage(page: Int): NoticePage =
+        NoticePage(total = 23, records = notices(page))
 }
 
 private class FakeEmptyRoomRepository : EmptyRoomRepository {
     override suspend fun rooms(campus: String, date: String, sections: IntRange): List<EmptyRoom> = listOf(
         EmptyRoom("中二-3201", campus, "中二", sections.toList()),
     )
+}
+
+private class FakeLibrarySeatRepository : LibrarySeatRepository {
+    override suspend fun snapshot(session: SiteSession, areaCode: String?): LibrarySeatSnapshot {
+        assertEquals(SiteKey.LIBRARY, session.site)
+        val areas = listOf(
+            LibraryAreaStats("north2east", "北楼二层外文库（东）", "二楼", available = 10, total = 100),
+            LibraryAreaStats("north4middle", "北楼四层中间", "四楼", available = 80, total = 120),
+        )
+        return LibrarySeatSnapshot(
+            selectedAreaCode = areaCode ?: "north2east",
+            areas = areas,
+            seats = listOf(LibrarySeatItem("J001", available = true)),
+            recommendedAreas = listOf(areas.last()),
+            myBooking = null,
+        )
+    }
+
+    override suspend fun bookSeat(
+        session: SiteSession,
+        seatId: String,
+        areaCode: String,
+        allowSwap: Boolean,
+    ): LibrarySeatBookingResult =
+        LibrarySeatBookingResult(success = true, message = "ok")
+}
+
+private class FakeCouponRepository : CouponRepository {
+    override suspend fun coupons(
+        session: SiteSession,
+        filter: CouponFilter,
+        page: Int,
+        pageSize: Int,
+    ): CouponPage {
+        assertEquals(SiteKey.COUPON, session.site)
+        val records = listOf(
+            CouponRecord(
+                sendId = "coupon-1",
+                showCardId = "show-1",
+                voucherName = "康桥苑加餐券",
+                typeName = "餐补券",
+                amountFen = 800,
+                leftAmountFen = 800,
+                leftCount = 1,
+                startDate = "2026-06-01",
+                endDate = "2026-06-30",
+            ),
+        )
+        return CouponPage(
+            filter = filter,
+            total = records.size,
+            records = records.drop((page - 1) * pageSize).take(pageSize),
+        )
+    }
+}
+
+private class FakeSchoolCourseRepository : SchoolCourseRepository {
+    override suspend fun courses(
+        session: SiteSession,
+        termCode: String?,
+        courseName: String,
+        teacher: String,
+        campusCode: String,
+        weekday: Int,
+        page: Int,
+        pageSize: Int,
+    ): SchoolCoursePage {
+        assertEquals(SiteKey.SCHEDULE, session.site)
+        val record = SchoolCourseItem(
+            courseCode = "MATH1001",
+            courseName = courseName.ifBlank { "高等数学" },
+            sectionNumber = "01",
+            teacher = "王老师",
+            department = "数学与统计学院",
+            credit = 3.0,
+            enrollCount = 86,
+            capacity = 100,
+            scheduleLocation = "周三 1-2 节 主楼-101",
+            campus = "兴庆校区",
+            teachingClassId = "class-1",
+            termCode = termCode ?: "2025-2026-2",
+        )
+        return SchoolCoursePage(
+            termCode = record.termCode,
+            total = 1,
+            page = page,
+            pageSize = pageSize,
+            records = listOf(record),
+        )
+    }
 }

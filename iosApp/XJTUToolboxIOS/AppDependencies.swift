@@ -68,7 +68,8 @@ enum AppDependencyFactory {
         let noticeRepository = XjtuNoticeRepository(
             httpClient: httpClient,
             sources: XjtuNoticeSources.shared.firstReleaseDefaults,
-            maxItemsPerSource: 20
+            maxItemsPerSource: 20,
+            pageSize: 20
         )
         let emptyRoomRepository = EmptyRoomCdnRepository(
             httpClient: httpClient,
@@ -108,7 +109,8 @@ enum AppDependencyFactory {
         let noticeRepository = XjtuNoticeRepository(
             httpClient: publicHttpClient,
             sources: XjtuNoticeSources.shared.firstReleaseDefaults,
-            maxItemsPerSource: 20
+            maxItemsPerSource: 20,
+            pageSize: 20
         )
         let emptyRoomRepository = EmptyRoomCdnRepository(
             httpClient: publicHttpClient,
@@ -158,11 +160,21 @@ enum AppDependencyFactory {
         let noticeRepository = XjtuNoticeRepository(
             httpClient: publicHttpClient,
             sources: XjtuNoticeSources.shared.firstReleaseDefaults,
-            maxItemsPerSource: 20
+            maxItemsPerSource: 20,
+            pageSize: 20
         )
         let emptyRoomRepository = EmptyRoomCdnRepository(
             httpClient: publicHttpClient,
             baseUrl: "https://gh-release.xjtutoolbox.com/"
+        )
+        let librarySeatRepository = XjtuLibrarySeatRepository(
+            baseUrl: "http://rg.lib.xjtu.edu.cn:8086"
+        )
+        let couponRepository = XjtuCouponRepository(
+            baseUrl: "https://egc.xjtu.edu.cn"
+        )
+        let schoolCourseRepository = XjtuSchoolCourseRepository(
+            baseUrl: "https://jwxt.xjtu.edu.cn"
         )
         return makeKmp(
             authManager: authManager,
@@ -172,7 +184,10 @@ enum AppDependencyFactory {
                 gradeRepository: gradeRepository,
                 campusCardRepository: campusCardRepository,
                 noticeRepository: noticeRepository,
-                emptyRoomRepository: emptyRoomRepository
+                emptyRoomRepository: emptyRoomRepository,
+                librarySeatRepository: librarySeatRepository,
+                couponRepository: couponRepository,
+                schoolCourseRepository: schoolCourseRepository
             )
         )
     }

@@ -37,6 +37,7 @@ object JwappGradeParser {
                     score = scoreText(row),
                     credit = row["XF"]?.asDoubleOrNull() ?: 0.0,
                     gradePoint = row["XFJD"]?.asDoubleOrNull() ?: 0.0,
+                    termCode = row["XNXQDM"]?.asStringOrNull()?.trim().orEmpty(),
                 )
             }
         return JwappGradePage(

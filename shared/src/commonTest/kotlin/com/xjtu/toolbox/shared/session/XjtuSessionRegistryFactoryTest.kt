@@ -15,12 +15,15 @@ import kotlin.test.assertTrue
 
 class XjtuSessionRegistryFactoryTest {
     @Test
-    fun firstReleaseRegistryProvidesScheduleGradeAndCampusCardSessions() = runTest {
+    fun firstReleaseRegistryProvidesScheduleGradeCampusCardLibraryAndCouponSessions() = runTest {
         val directClient = QueueRegistryHttpClient(
             HttpResponse(code = 200, finalUrl = "$JWAPP_BASE/jwapp/sys/wdkb/*default/index.do"),
             HttpResponse(code = 200, finalUrl = "$MOBILE_JWAPP_BASE/app/index?token=token-0"),
             HttpResponse(code = 200, finalUrl = "$NCARD_BASE/plat/?ticket=ST-0"),
             HttpResponse(code = 200, finalUrl = "$NCARD_BASE/token", bodyText = """{"access_token":"jwt-0"}"""),
+            HttpResponse(code = 200, finalUrl = "$LIBRARY_BASE/seat/", bodyText = "<div class=\"btn-group\">seat</div>"),
+            HttpResponse(code = 200, finalUrl = "$COUPON_BASE/page/cas/receiveCas.html?code=CODE-0&userType=student&employeeNo=3124000000"),
+            HttpResponse(code = 200, finalUrl = "$COUPON_BASE/sso/login", headers = mapOf("Authorization" to "Bearer eyJcoupon.token")),
         )
         val registry = XjtuSessionRegistryFactory.firstReleaseSessionRegistry(
             directBackend = SessionBackend.normal(directClient),
@@ -29,14 +32,20 @@ class XjtuSessionRegistryFactoryTest {
         val schedule = registry.session(SiteKey.SCHEDULE, AccessMode.NORMAL)
         val grade = registry.session(SiteKey.GRADE, AccessMode.NORMAL)
         val campusCard = registry.session(SiteKey.CAMPUS_CARD, AccessMode.NORMAL)
+        val library = registry.session(SiteKey.LIBRARY, AccessMode.NORMAL)
+        val coupon = registry.session(SiteKey.COUPON, AccessMode.NORMAL)
         schedule.ensureAuthenticated(AuthContext(username = "3124000000"))
         grade.ensureAuthenticated(AuthContext(username = "3124000000"))
         campusCard.ensureAuthenticated(AuthContext(username = "3124000000"))
+        library.ensureAuthenticated(AuthContext(username = "3124000000"))
+        coupon.ensureAuthenticated(AuthContext(username = "3124000000"))
 
         assertEquals(SiteKey.SCHEDULE, schedule.site)
         assertEquals(SiteKey.GRADE, grade.site)
         assertEquals(SiteKey.CAMPUS_CARD, campusCard.site)
-        assertEquals(4, directClient.requests.size)
+        assertEquals(SiteKey.LIBRARY, library.site)
+        assertEquals(SiteKey.COUPON, coupon.site)
+        assertEquals(7, directClient.requests.size)
     }
 
     @Test
@@ -81,6 +90,8 @@ class XjtuSessionRegistryFactoryTest {
         private const val JWAPP_BASE = "https://jwxt.xjtu.edu.cn"
         private const val MOBILE_JWAPP_BASE = "https://jwapp.xjtu.edu.cn"
         private const val NCARD_BASE = "https://ncard.xjtu.edu.cn"
+        private const val LIBRARY_BASE = "http://rg.lib.xjtu.edu.cn:8086"
+        private const val COUPON_BASE = "https://egc.xjtu.edu.cn"
     }
 }
 

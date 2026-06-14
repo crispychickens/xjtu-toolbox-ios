@@ -20,6 +20,12 @@ object XjtuSessionRegistryFactory {
                 SiteKey.CAMPUS_CARD to { mode ->
                     campusCardSession(mode, directBackend, webVpnBackend)
                 },
+                SiteKey.LIBRARY to { mode ->
+                    librarySession(mode, directBackend, webVpnBackend)
+                },
+                SiteKey.COUPON to { mode ->
+                    couponSession(mode, directBackend, webVpnBackend)
+                },
             ),
         )
 
@@ -49,6 +55,34 @@ object XjtuSessionRegistryFactory {
         val authenticator = NcardSessionAuthenticator(backend.httpClient)
         return BackendSiteSession(
             site = SiteKey.CAMPUS_CARD,
+            backend = backend,
+            authenticate = authenticator::authenticate,
+        )
+    }
+
+    fun librarySession(
+        mode: AccessMode,
+        directBackend: SessionBackend,
+        webVpnBackend: SessionBackend = directBackend,
+    ): BackendSiteSession {
+        val backend = backendFor(mode, directBackend, webVpnBackend)
+        val authenticator = LibrarySessionAuthenticator(backend.httpClient)
+        return BackendSiteSession(
+            site = SiteKey.LIBRARY,
+            backend = backend,
+            authenticate = authenticator::authenticate,
+        )
+    }
+
+    fun couponSession(
+        mode: AccessMode,
+        directBackend: SessionBackend,
+        webVpnBackend: SessionBackend = directBackend,
+    ): BackendSiteSession {
+        val backend = backendFor(mode, directBackend, webVpnBackend)
+        val authenticator = CouponSessionAuthenticator(backend.httpClient)
+        return BackendSiteSession(
+            site = SiteKey.COUPON,
             backend = backend,
             authenticate = authenticator::authenticate,
         )

@@ -70,6 +70,10 @@ object JwappScheduleParser {
                     courseName = courseName,
                     time = listOf(examDate, cleanedTime).filter { it.isNotBlank() }.joinToString(" "),
                     location = row["JASMC"]?.asStringOrNull()?.trim().orEmpty(),
+                    courseCode = row["KCH"]?.asStringOrNull()?.trim().orEmpty(),
+                    examDate = examDate,
+                    examTime = cleanedTime,
+                    seatNumber = row["ZWH"]?.asStringOrNull()?.trim().orEmpty(),
                 )
             }
     }

@@ -95,6 +95,8 @@ enum XjtuLaunchArguments {
     static let authNetworkDebug = "-XJTUAuthNetworkDebug"
     static let initialUsername = "-XJTUInitialUsername"
     static let startTab = "-XJTUStartTab"
+    static let startTool = "-XJTUStartTool"
+    static let startScheduleView = "-XJTUStartScheduleView"
 
     static var dependencyMode: XjtuDependencyMode {
         if arguments.contains(realFirstReleaseCore) {
@@ -166,6 +168,22 @@ enum XjtuLaunchArguments {
             return .schedule
         }
         return tab
+    }
+
+    static var initialToolName: String? {
+        guard let index = raw.firstIndex(of: startTool),
+              raw.indices.contains(index + 1) else {
+            return nil
+        }
+        return raw[index + 1].trimmingCharacters(in: .whitespacesAndNewlines).takeIfNotEmpty()
+    }
+
+    static var initialScheduleViewName: String? {
+        guard let index = raw.firstIndex(of: startScheduleView),
+              raw.indices.contains(index + 1) else {
+            return nil
+        }
+        return raw[index + 1].trimmingCharacters(in: .whitespacesAndNewlines).takeIfNotEmpty()
     }
 
     private static var raw: [String] {

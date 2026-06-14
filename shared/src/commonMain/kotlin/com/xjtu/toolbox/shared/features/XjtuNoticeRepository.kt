@@ -22,16 +22,25 @@ class XjtuNoticeRepository(
     private val httpClient: HttpClient,
     private val sources: List<NoticeSourceConfig> = XjtuNoticeSources.firstReleaseDefaults,
     private val maxItemsPerSource: Int = 20,
+    private val pageSize: Int = 20,
 ) : NoticeRepository {
-    override suspend fun notices(page: Int): List<NoticeItem> {
-        require(page >= 1) { "page must be >= 1" }
-        if (sources.isEmpty()) return emptyList()
+    override suspend fun notices(page: Int): List<NoticeItem> =
+        noticePage(page).records
 
-        return sources.flatMap { source ->
+    override suspend fun noticePage(page: Int): NoticePage {
+        require(page >= 1) { "page must be >= 1" }
+        require(pageSize >= 1) { "pageSize must be >= 1" }
+        if (sources.isEmpty()) return NoticePage(total = 0, records = emptyList())
+
+        val notices = sources.flatMap { source ->
             runCatching { fetchSource(source).take(maxItemsPerSource) }.getOrDefault(emptyList())
         }
             .distinctBy { "${it.source}|${it.title}|${it.link}" }
             .sortedWith(compareByDescending<NoticeItem> { it.date ?: "" }.thenBy { it.source }.thenBy { it.title })
+        return NoticePage(
+            total = notices.size,
+            records = notices.drop((page - 1) * pageSize).take(pageSize),
+        )
     }
 
     private suspend fun fetchSource(source: NoticeSourceConfig): List<NoticeItem> {

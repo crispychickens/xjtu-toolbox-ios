@@ -19,6 +19,8 @@ enum class SiteKey(val stableName: String) {
     EMPTY_ROOM("empty_room"),
     SCHEDULE("schedule"),
     GRADE("grade"),
+    LIBRARY("library"),
+    COUPON("coupon"),
 }
 
 sealed interface AuthState {

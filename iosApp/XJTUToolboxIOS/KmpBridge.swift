@@ -285,6 +285,27 @@ final class KmpFeatureProviderAdapter: SharedFeatureProviding, FeatureCacheClear
         )
     }
 
+    func gradeDetail(gradeId: String) async throws -> SharedGradeDetail {
+        let detail = try await awaitKmp("grade detail") { completion in
+            service.gradeDetail(gradeId: gradeId, completionHandler: completion)
+        }
+        return SharedGradeDetail(
+            courseName: detail.courseName,
+            score: detail.score,
+            credit: detail.credit,
+            gradePoint: detail.gradePoint,
+            examType: detail.examType,
+            courseProperty: detail.courseProperty,
+            examProperty: detail.examProperty,
+            isReplacement: detail.isReplacement,
+            isPassed: detail.isPassed,
+            specificReason: detail.specificReason,
+            items: detail.items.map {
+                SharedGradeDetailItem(name: $0.name, percent: $0.percent, score: $0.score)
+            }
+        )
+    }
+
     func campusCard(page: Int, pageSize: Int) async throws -> SharedCampusCardSnapshot {
         let snapshot = try await awaitKmp("campus card") { completion in
             service.campusCard(
@@ -295,15 +316,19 @@ final class KmpFeatureProviderAdapter: SharedFeatureProviding, FeatureCacheClear
         }
         return SharedCampusCardSnapshot(
             info: mapCampusCardInfo(snapshot.info),
-            transactions: snapshot.transactions.map(mapTransaction)
+            transactions: snapshot.transactions.map(mapTransaction),
+            totalTransactions: Int(snapshot.totalTransactions)
         )
     }
 
-    func notices(page: Int) async throws -> [SharedNoticeItem] {
-        let notices = try await awaitKmp("notices") { completion in
-            service.notices(page: Int32(page), completionHandler: completion)
+    func noticePage(page: Int) async throws -> SharedNoticePage {
+        let page = try await awaitKmp("notice page") { completion in
+            service.noticePage(page: Int32(page), completionHandler: completion)
         }
-        return notices.map(mapNotice)
+        return SharedNoticePage(
+            total: Int(page.total),
+            records: page.records.map(mapNotice)
+        )
     }
 
     func emptyRooms(campus: String, date: String, sections: ClosedRange<Int>) async throws -> [SharedEmptyRoom] {
@@ -320,6 +345,75 @@ final class KmpFeatureProviderAdapter: SharedFeatureProviding, FeatureCacheClear
             )
         }
         return rooms.map(mapEmptyRoom)
+    }
+
+    func librarySeats(areaCode: String?) async throws -> SharedLibrarySeatSnapshot {
+        let snapshot = try await awaitKmp("library seats") { completion in
+            service.librarySeats(areaCode: areaCode, completionHandler: completion)
+        }
+        return mapLibrarySeatSnapshot(snapshot)
+    }
+
+    func bookLibrarySeat(seatId: String, areaCode: String, allowSwap: Bool) async throws -> SharedLibrarySeatBookingResult {
+        let result = try await awaitKmp("book library seat") { completion in
+            service.bookLibrarySeat(
+                seatId: seatId,
+                areaCode: areaCode,
+                allowSwap: allowSwap,
+                completionHandler: completion
+            )
+        }
+        return SharedLibrarySeatBookingResult(
+            success: result.success,
+            message: result.message,
+            finalURL: result.finalUrl
+        )
+    }
+
+    func coupons(filter: SharedCouponFilter, page: Int, pageSize: Int) async throws -> SharedCouponPage {
+        let couponPage = try await awaitKmp("coupons") { completion in
+            service.coupons(
+                filter: filter.kmpValue,
+                page: Int32(page),
+                pageSize: Int32(pageSize),
+                completionHandler: completion
+            )
+        }
+        return SharedCouponPage(
+            filter: mapCouponFilter(couponPage.filter),
+            total: Int(couponPage.total),
+            records: couponPage.records.map(mapCoupon)
+        )
+    }
+
+    func schoolCourses(
+        termCode: String?,
+        courseName: String,
+        teacher: String,
+        campusCode: String,
+        weekday: Int,
+        page: Int,
+        pageSize: Int
+    ) async throws -> SharedSchoolCoursePage {
+        let result = try await awaitKmp("school courses") { completion in
+            service.schoolCourses(
+                termCode: termCode,
+                courseName: courseName,
+                teacher: teacher,
+                campusCode: campusCode,
+                weekday: Int32(weekday),
+                page: Int32(page),
+                pageSize: Int32(pageSize),
+                completionHandler: completion
+            )
+        }
+        return SharedSchoolCoursePage(
+            termCode: result.termCode,
+            total: Int(result.total),
+            page: Int(result.page),
+            pageSize: Int(result.pageSize),
+            records: result.records.map(mapSchoolCourse)
+        )
     }
 
     private func mapCourse(_ item: CourseItem) -> SharedCourseItem {
@@ -340,7 +434,11 @@ final class KmpFeatureProviderAdapter: SharedFeatureProviding, FeatureCacheClear
             id: "\(item.courseName)|\(item.time)|\(item.location)",
             courseName: item.courseName,
             time: item.time,
-            location: item.location
+            location: item.location,
+            courseCode: item.courseCode,
+            examDate: item.examDate,
+            examTime: item.examTime,
+            seatNumber: item.seatNumber
         )
     }
 
@@ -352,17 +450,22 @@ final class KmpFeatureProviderAdapter: SharedFeatureProviding, FeatureCacheClear
             author: item.author,
             publisher: item.publisher,
             isbn: item.isbn,
+            edition: item.edition,
+            price: item.price,
             hasSubstantiveTextbook: item.hasSubstantiveTextbook
         )
     }
 
     private func mapGrade(_ item: GradeItem) -> SharedGradeItem {
-        SharedGradeItem(
-            id: "\(item.courseName)|\(item.score)|\(item.credit)",
+        let fallbackID = "\(item.termCode)|\(item.courseName)|\(item.score)|\(item.credit)"
+        return SharedGradeItem(
+            id: item.id.isEmpty ? fallbackID : item.id,
             courseName: item.courseName,
             score: item.score,
             credit: item.credit,
-            gradePoint: item.gradePoint
+            gradePoint: item.gradePoint,
+            hasDetail: !item.id.isEmpty,
+            termCode: item.termCode
         )
     }
 
@@ -379,7 +482,8 @@ final class KmpFeatureProviderAdapter: SharedFeatureProviding, FeatureCacheClear
             time: item.time,
             merchant: item.merchant,
             amountYuan: item.amountYuan,
-            isIncome: item.kind.name == "INCOME"
+            isIncome: item.kind.name == "INCOME",
+            balanceAfterYuan: item.balanceAfterYuan?.doubleValue
         )
     }
 
@@ -399,7 +503,91 @@ final class KmpFeatureProviderAdapter: SharedFeatureProviding, FeatureCacheClear
             name: item.name,
             campus: item.campus,
             building: item.building,
-            availableSections: item.availableSections.map { Int($0.int32Value) }
+            availableSections: item.availableSections.map { Int($0.int32Value) },
+            capacity: Int(item.capacity)
+        )
+    }
+
+    private func mapLibrarySeatSnapshot(_ snapshot: LibrarySeatSnapshot) -> SharedLibrarySeatSnapshot {
+        SharedLibrarySeatSnapshot(
+            selectedAreaCode: snapshot.selectedAreaCode,
+            areas: snapshot.areas.map(mapLibraryArea),
+            seats: snapshot.seats.map(mapLibrarySeat),
+            recommendedAreas: snapshot.recommendedAreas.map(mapLibraryArea),
+            myBooking: snapshot.myBooking.map(mapLibraryBooking)
+        )
+    }
+
+    private func mapLibraryArea(_ item: LibraryAreaStats) -> SharedLibraryAreaStats {
+        SharedLibraryAreaStats(
+            code: item.code,
+            name: item.name,
+            floor: item.floor,
+            available: Int(item.available),
+            total: Int(item.total)
+        )
+    }
+
+    private func mapLibrarySeat(_ item: LibrarySeatItem) -> SharedLibrarySeatItem {
+        SharedLibrarySeatItem(
+            seatId: item.seatId,
+            available: item.available
+        )
+    }
+
+    private func mapLibraryBooking(_ item: LibraryBookingInfo) -> SharedLibraryBookingInfo {
+        SharedLibraryBookingInfo(
+            seatId: item.seatId,
+            areaName: item.areaName,
+            statusText: item.statusText
+        )
+    }
+
+    private func mapCoupon(_ item: CouponRecord) -> SharedCouponRecord {
+        let fallbackID = "\(item.showCardId)|\(item.sendId)|\(item.voucherName)"
+        return SharedCouponRecord(
+            id: item.showCardId.isEmpty ? fallbackID : item.showCardId,
+            sendId: item.sendId,
+            showCardId: item.showCardId,
+            voucherName: item.voucherName,
+            typeName: item.typeName,
+            amountYuan: item.amountYuan,
+            leftAmountYuan: item.leftAmountYuan,
+            leftCount: Int(item.leftCount),
+            startDate: item.startDate,
+            endDate: item.endDate,
+            imageURL: item.imageUrl
+        )
+    }
+
+    private func mapCouponFilter(_ filter: CouponFilter) -> SharedCouponFilter {
+        switch filter.name {
+        case "AVAILABLE":
+            return .available
+        case "USED_UP":
+            return .usedUp
+        case "EXPIRED":
+            return .expired
+        default:
+            return .usable
+        }
+    }
+
+    private func mapSchoolCourse(_ item: SchoolCourseItem) -> SharedSchoolCourse {
+        let fallbackID = "\(item.termCode)|\(item.courseCode)|\(item.sectionNumber)|\(item.teacher)"
+        return SharedSchoolCourse(
+            id: item.teachingClassId.isEmpty ? fallbackID : item.teachingClassId,
+            courseCode: item.courseCode,
+            courseName: item.courseName,
+            sectionNumber: item.sectionNumber,
+            teacher: item.teacher,
+            department: item.department,
+            credit: item.credit,
+            enrollCount: Int(item.enrollCount),
+            capacity: Int(item.capacity),
+            scheduleLocation: item.scheduleLocation,
+            campus: item.campus,
+            termCode: item.termCode
         )
     }
 }
@@ -459,6 +647,21 @@ extension SharedAccessMode {
     }
 }
 
+extension SharedCouponFilter {
+    var kmpValue: CouponFilter {
+        switch self {
+        case .available:
+            return CouponFilter.available
+        case .usable:
+            return CouponFilter.usable
+        case .usedUp:
+            return CouponFilter.usedUp
+        case .expired:
+            return CouponFilter.expired
+        }
+    }
+}
+
 private extension Optional where Wrapped == String {
     var kmpSiteKey: SiteKey? {
         flatMap { $0.kmpSiteKey }
@@ -484,6 +687,10 @@ private extension String {
             return SiteKey.schedule
         case "grade":
             return SiteKey.grade
+        case "library":
+            return SiteKey.library
+        case "coupon":
+            return SiteKey.coupon
         default:
             return nil
         }

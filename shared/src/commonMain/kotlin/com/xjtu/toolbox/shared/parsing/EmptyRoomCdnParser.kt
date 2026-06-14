@@ -29,6 +29,7 @@ object EmptyRoomCdnParser {
                     campus = campus,
                     building = buildingName,
                     availableSections = freeSections,
+                    capacity = room["size"]?.asIntOrNull()?.coerceAtLeast(0) ?: 0,
                 )
             }
         }.sortedWith(compareBy<EmptyRoom> { it.building }.thenBy { it.name })

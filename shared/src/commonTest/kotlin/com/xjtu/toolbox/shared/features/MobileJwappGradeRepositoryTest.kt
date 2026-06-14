@@ -32,19 +32,53 @@ class MobileJwappGradeRepositoryTest {
 
         val grades = repository.grades(session, termCode = null)
 
-        assertEquals(2, grades.size)
+        assertEquals(3, grades.size)
         assertEquals("高等数学", grades[0].courseName)
         assertEquals("92", grades[0].score)
         assertEquals(3.0, grades[0].credit)
         assertEquals(3.9, grades[0].gradePoint)
+        assertEquals("score-1", grades[0].id)
+        assertEquals("2025-2026-1", grades[0].termCode)
         assertEquals("大学体育", grades[1].courseName)
         assertEquals(4.0, grades[1].gradePoint)
+        assertEquals("线性代数", grades[2].courseName)
+        assertEquals("2024-2025-2", grades[2].termCode)
         assertEquals("$BASE/api/biz/v410/score/termScore", client.requests.single().url)
         assertEquals(HttpMethod.POST, client.requests.single().method)
         assertEquals("token-1", client.requests.single().headers["Authorization"])
         assertEquals("Mozilla/5.0", client.requests.single().headers["User-Agent"])
         assertEquals("application/json", client.requests.single().headers["Content-Type"])
         assertEquals("""{"termCode":"*"}""", client.requests.single().body?.decodeToString())
+    }
+
+    @Test
+    fun fetchesScoreDetailAndParsesComponentScores() = runTest {
+        val client = QueueMobileGradeHttpClient(
+            HttpResponse(code = 200, finalUrl = "$BASE/api/biz/v410/score/scoreDetail", bodyText = scoreDetailJson),
+        )
+        val session = BackendSiteSession(
+            site = SiteKey.GRADE,
+            backend = SessionBackend.normal(client),
+            authenticate = { mapOf("Authorization" to "token-1") },
+        ).also {
+            it.ensureAuthenticated(AuthContext(username = "3124000000"))
+        }
+
+        val detail = MobileJwappGradeRepository(baseUrl = BASE).gradeDetail(session, "score-1")
+
+        assertEquals("高等数学", detail.courseName)
+        assertEquals("92", detail.score)
+        assertEquals(3.0, detail.credit)
+        assertEquals(3.9, detail.gradePoint)
+        assertEquals("正常考试", detail.examType)
+        assertEquals("专业基础课", detail.courseProperty)
+        assertEquals("正常", detail.examProperty)
+        assertEquals(true, detail.isPassed)
+        assertEquals(2, detail.items.size)
+        assertEquals("平时成绩", detail.items[0].name)
+        assertEquals(0.3, detail.items[0].percent)
+        assertEquals("95", detail.items[0].score)
+        assertEquals("""{"id":"score-1"}""", client.requests.single().body?.decodeToString())
     }
 
     @Test
@@ -60,8 +94,10 @@ class MobileJwappGradeRepositoryTest {
             it.ensureAuthenticated(AuthContext(username = "3124000000"))
         }
 
-        MobileJwappGradeRepository(baseUrl = BASE).grades(session, termCode = "2025-2026-1")
+        val grades = MobileJwappGradeRepository(baseUrl = BASE).grades(session, termCode = "2025-2026-1")
 
+        assertEquals(2, grades.size)
+        assertEquals(listOf("2025-2026-1", "2025-2026-1"), grades.map { it.termCode })
         assertEquals("""{"termCode":"2025-2026-1"}""", client.requests.single().body?.decodeToString())
     }
 
@@ -134,6 +170,7 @@ private val termScoreJson = """
             "termCode": "2025-2026-1",
             "scoreList": [
               {
+                "id": "score-1",
                 "courseName": "高等数学",
                 "score": "92",
                 "coursePoint": 3.0,
@@ -148,7 +185,42 @@ private val termScoreJson = """
                 "passFlag": true
               }
             ]
+          },
+          {
+            "termCode": "2024-2025-2",
+            "scoreList": [
+              {
+                "id": "score-3",
+                "courseName": "线性代数",
+                "score": "88",
+                "coursePoint": 3.0,
+                "gpa": 3.6,
+                "passFlag": true
+              }
+            ]
           }
+        ]
+      }
+    }
+""".trimIndent()
+
+private val scoreDetailJson = """
+    {
+      "code": 200,
+      "data": {
+        "courseName": "高等数学",
+        "score": "92",
+        "coursePoint": 3.0,
+        "gpa": 3.9,
+        "examType": "正常考试",
+        "majorFlag": "专业基础课",
+        "examProp": "正常",
+        "replaceFlag": false,
+        "passFlag": true,
+        "specificReason": null,
+        "itemList": [
+          {"itemName":"平时成绩","itemPercent":"30%","itemScore":"95"},
+          {"itemName":"期末考试","itemPercent":"70%","itemScore":"91"}
         ]
       }
     }

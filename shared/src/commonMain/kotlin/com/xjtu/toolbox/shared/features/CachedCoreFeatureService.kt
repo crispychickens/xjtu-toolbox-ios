@@ -30,6 +30,9 @@ interface CoreFeatureCacheStore {
     fun loadNotices(page: Int): CoreFeatureCacheEntry<List<NoticeItem>>?
     fun saveNotices(page: Int, entry: CoreFeatureCacheEntry<List<NoticeItem>>)
 
+    fun loadNoticePage(page: Int): CoreFeatureCacheEntry<NoticePage>?
+    fun saveNoticePage(page: Int, entry: CoreFeatureCacheEntry<NoticePage>)
+
     fun loadEmptyRooms(campus: String, date: String, sections: IntRange): CoreFeatureCacheEntry<List<EmptyRoom>>?
     fun saveEmptyRooms(campus: String, date: String, sections: IntRange, entry: CoreFeatureCacheEntry<List<EmptyRoom>>)
 
@@ -72,6 +75,13 @@ class InMemoryCoreFeatureCacheStore : CoreFeatureCacheStore {
 
     override fun saveNotices(page: Int, entry: CoreFeatureCacheEntry<List<NoticeItem>>) {
         entries[noticesKey(page)] = entry
+    }
+
+    override fun loadNoticePage(page: Int): CoreFeatureCacheEntry<NoticePage>? =
+        entry(noticePageKey(page))
+
+    override fun saveNoticePage(page: Int, entry: CoreFeatureCacheEntry<NoticePage>) {
+        entries[noticePageKey(page)] = entry
     }
 
     override fun loadEmptyRooms(campus: String, date: String, sections: IntRange): CoreFeatureCacheEntry<List<EmptyRoom>>? =
@@ -117,6 +127,9 @@ class CachedCoreFeatureService(
             save = { cacheStore.saveGrades(termCode, it) },
         )
 
+    override suspend fun gradeDetail(gradeId: String): GradeDetail =
+        delegate.gradeDetail(gradeId)
+
     override suspend fun campusCard(page: Int, pageSize: Int): CampusCardSnapshot =
         load(
             cached = cacheStore.loadCampusCard(page, pageSize),
@@ -131,12 +144,43 @@ class CachedCoreFeatureService(
             save = { cacheStore.saveNotices(page, it) },
         )
 
+    override suspend fun noticePage(page: Int): NoticePage =
+        load(
+            cached = cacheStore.loadNoticePage(page),
+            fetch = { delegate.noticePage(page) },
+            save = { cacheStore.saveNoticePage(page, it) },
+        )
+
     override suspend fun emptyRooms(campus: String, date: String, sections: IntRange): List<EmptyRoom> =
         load(
             cached = cacheStore.loadEmptyRooms(campus, date, sections),
             fetch = { delegate.emptyRooms(campus, date, sections) },
             save = { cacheStore.saveEmptyRooms(campus, date, sections, it) },
         )
+
+    override suspend fun librarySeats(areaCode: String?): LibrarySeatSnapshot =
+        delegate.librarySeats(areaCode)
+
+    override suspend fun bookLibrarySeat(
+        seatId: String,
+        areaCode: String,
+        allowSwap: Boolean,
+    ): LibrarySeatBookingResult =
+        delegate.bookLibrarySeat(seatId, areaCode, allowSwap)
+
+    override suspend fun coupons(filter: CouponFilter, page: Int, pageSize: Int): CouponPage =
+        delegate.coupons(filter, page, pageSize)
+
+    override suspend fun schoolCourses(
+        termCode: String?,
+        courseName: String,
+        teacher: String,
+        campusCode: String,
+        weekday: Int,
+        page: Int,
+        pageSize: Int,
+    ): SchoolCoursePage =
+        delegate.schoolCourses(termCode, courseName, teacher, campusCode, weekday, page, pageSize)
 
     private suspend fun <T> load(
         cached: CoreFeatureCacheEntry<T>?,
@@ -171,6 +215,9 @@ private fun campusCardKey(page: Int, pageSize: Int): String =
 
 private fun noticesKey(page: Int): String =
     "notices:$page"
+
+private fun noticePageKey(page: Int): String =
+    "notice_page:$page"
 
 private fun emptyRoomsKey(campus: String, date: String, sections: IntRange): String =
     "empty_rooms:$campus:$date:${sections.first}:${sections.last}"

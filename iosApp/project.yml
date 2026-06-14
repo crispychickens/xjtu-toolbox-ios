@@ -20,6 +20,11 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        NSAppTransportSecurity:
+          NSExceptionDomains:
+            rg.lib.xjtu.edu.cn:
+              NSIncludesSubdomains: false
+              NSExceptionAllowsInsecureHTTPLoads: true
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.xjtu.toolbox.ios
       FRAMEWORK_SEARCH_PATHS:

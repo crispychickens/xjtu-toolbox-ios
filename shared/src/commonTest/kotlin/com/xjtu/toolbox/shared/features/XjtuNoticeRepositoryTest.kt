@@ -61,7 +61,8 @@ class XjtuNoticeRepositoryTest {
             ),
         )
 
-        val notices = repository.notices(page = 1)
+        val page = repository.noticePage(page = 1)
+        val notices = page.records
 
         assertEquals(
             listOf(
@@ -72,6 +73,7 @@ class XjtuNoticeRepositoryTest {
         )
         assertEquals("研究生培养通知", notices.first().title)
         assertEquals("关于做好期末考试安排的通知", notices[1].title)
+        assertEquals(3, page.total)
     }
 
     @Test
@@ -91,6 +93,41 @@ class XjtuNoticeRepositoryTest {
 
         assertEquals(2, notices.size)
         assertEquals(setOf("教务处"), notices.map { it.source }.toSet())
+    }
+
+    @Test
+    fun repositoryPaginatesAfterCrossSourceSorting() = runTest {
+        val responses = listOf(
+            HttpResponse(code = 200, finalUrl = "https://dean.example.edu", bodyText = noticeHtml),
+            HttpResponse(code = 200, finalUrl = "https://gs.example.edu", bodyText = graduateNoticeHtml),
+        )
+        val sources = listOf(
+            NoticeSourceConfig("教务处", "https://dean.example.edu"),
+            NoticeSourceConfig("研究生院", "https://gs.example.edu"),
+        )
+
+        val firstPage = XjtuNoticeRepository(
+            httpClient = QueueHttpClient(*responses.toTypedArray()),
+            sources = sources,
+            pageSize = 2,
+        ).noticePage(page = 1)
+        val secondPage = XjtuNoticeRepository(
+            httpClient = QueueHttpClient(*responses.toTypedArray()),
+            sources = sources,
+            pageSize = 2,
+        ).noticePage(page = 2)
+        val thirdPage = XjtuNoticeRepository(
+            httpClient = QueueHttpClient(*responses.toTypedArray()),
+            sources = sources,
+            pageSize = 2,
+        ).noticePage(page = 3)
+
+        assertEquals(3, firstPage.total)
+        assertEquals(3, secondPage.total)
+        assertEquals(3, thirdPage.total)
+        assertEquals(listOf("研究生培养通知", "关于做好期末考试安排的通知"), firstPage.records.map { it.title })
+        assertEquals(listOf("本科生选课通知"), secondPage.records.map { it.title })
+        assertEquals(emptyList(), thirdPage.records)
     }
 }
 
@@ -123,4 +160,10 @@ private val noticeHtml = """
         </ul>
       </body>
     </html>
+""".trimIndent()
+
+private val graduateNoticeHtml = """
+    <ul>
+      <li><span>2026-05-21</span><a href="/info/1001/999.htm">研究生培养通知</a></li>
+    </ul>
 """.trimIndent()

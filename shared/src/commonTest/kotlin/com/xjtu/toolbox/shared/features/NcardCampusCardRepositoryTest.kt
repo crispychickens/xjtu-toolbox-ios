@@ -43,11 +43,13 @@ class NcardCampusCardRepositoryTest {
             timeTo = "2026-05-20",
         )
 
-        val transactions = repository.transactions(session, page = 2, pageSize = 20)
+        val transactionPage = repository.transactionPage(session, page = 2, pageSize = 20)
 
-        assertEquals(2, transactions.size)
-        assertEquals(TransactionKind.EXPENSE, transactions[0].kind)
-        assertEquals(TransactionKind.INCOME, transactions[1].kind)
+        assertEquals(2, transactionPage.total)
+        assertEquals(2, transactionPage.records.size)
+        assertEquals(TransactionKind.EXPENSE, transactionPage.records[0].kind)
+        assertEquals(30.5, transactionPage.records[0].balanceAfterYuan)
+        assertEquals(TransactionKind.INCOME, transactionPage.records[1].kind)
         assertEquals(1, client.requests.size)
         assertEquals(
             "$BASE/berserker-search/search/personal/turnover?size=20&current=2&synAccessSource=h5&timeFrom=2026-05-01&timeTo=2026-05-20",
@@ -133,6 +135,7 @@ private val transactionJson = """
             "jndatetimeStr": "2026-05-20 12:00:00",
             "toMerchant": "康桥苑",
             "tranamt": 1200,
+            "cardBalance": 3050,
             "icon": "qrcode",
             "turnoverType": "",
             "resume": "付款码消费-康桥苑"
@@ -141,6 +144,7 @@ private val transactionJson = """
             "jndatetimeStr": "2026-05-20 13:00:00",
             "toMerchant": "充值",
             "tranamt": 10000,
+            "cardBalance": 13050,
             "icon": "recharge",
             "turnoverType": "充值",
             "resume": "线上充值"

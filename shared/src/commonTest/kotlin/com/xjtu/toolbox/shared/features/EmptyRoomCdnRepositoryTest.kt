@@ -21,6 +21,7 @@ class EmptyRoomCdnRepositoryTest {
         assertEquals(1, rooms.size)
         assertEquals("101", rooms.single().name)
         assertEquals("主楼A", rooms.single().building)
+        assertEquals(80, rooms.single().capacity)
         assertEquals(listOf(1, 2, 4), rooms.single().availableSections)
     }
 

@@ -82,6 +82,10 @@ private extension String {
             return "日程"
         case "grade":
             return "成绩"
+        case "library":
+            return "图书馆座位"
+        case "coupon":
+            return "加餐券"
         case "jwapp", "jwxt":
             return "教务"
         default:
@@ -147,6 +151,10 @@ struct SiteVerificationBanner: View {
             return "当前登录未退出，日程等已加载内容可继续查看；校园卡需要单独完成一次授权。"
         case "schedule", "grade", "jwapp", "jwxt":
             return "当前登录未退出；教务系统要求重新确认身份，完成后会继续加载相关数据。"
+        case "library":
+            return "当前登录未退出；图书馆座位系统要求单独确认身份，完成后会继续加载座位数据。"
+        case "coupon":
+            return "当前登录未退出；加餐券系统要求单独确认身份，完成后会继续加载券数据。"
         default:
             return message
         }

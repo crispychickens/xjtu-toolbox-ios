@@ -1,90 +1,87 @@
 # Project Memory
 
-This file is the low-token project snapshot for future agents. It should not be a full changelog. Keep stable architecture, current validation state, and constraints here; use git history, tests, ADRs, and CodeGraph for detail.
+Low-token current-state snapshot for future agents. This is not a changelog. Use Git history for chronology, ADRs for decisions, and CodeGraph for source-level structure.
 
-## Quick Read Order
+## Read Order
 
-- Read `CONTEXT.md` for domain vocabulary.
-- Read this file for current state and constraints.
-- For cross-module work, use `docs/agents/codegraph.md` before broad source reads.
-- Read relevant ADRs under `docs/adr/` before changing KMP/iOS boundaries, auth, browser auth, WebVPN, or request pacing.
+- Read `CONTEXT.md`, then this file.
+- Before cross-module changes, read `docs/agents/codegraph.md` and query CodeGraph.
+- Before changing KMP/iOS boundaries, auth, browser auth, WebVPN, or request pacing, read the relevant ADR under `docs/adr/`.
+- Use `docs/ios-migration.md` for detailed migration behavior and validation commands.
 
-## Current System Shape
+## Current System
 
-- Product: XJTU Toolbox / 岱宗盒子, a campus utility app for XJTU students.
-- Source baseline: Android app imported from `yeliqin666/xjtu-toolbox-android@v3.5.1` remains intact in `app`.
-- Migration architecture: `shared` is the Kotlin Multiplatform core; `iosApp` is the SwiftUI shell; `iosApp/XJTUToolboxIOS.xcodeproj` is generated from `iosApp/project.yml` with XcodeGen.
-- Architecture decisions: ADR 0001 establishes KMP shared core plus SwiftUI shell; ADR 0002 establishes login throttling and official browser-auth handoff.
-- Local navigation: `.codegraph/` is ignored by git and exists for low-token structural lookup. Last known status check on 2026-06-06 reported 250 files, 8,231 nodes, and 17,236 edges across Android, shared KMP, iOS, demo, and website files.
+- Product: XJTU Toolbox / 岱宗盒子, a direct-to-school-system campus utility for XJTU students.
+- Baseline: the Android v3.5.1 app remains in `app`; `shared` is the Kotlin Multiplatform core; `iosApp` is the SwiftUI shell generated from `iosApp/project.yml`.
+- ADR 0001 establishes KMP shared core plus SwiftUI shell. ADR 0002 establishes login throttling and official browser-auth handoff.
+- CodeGraph is local and ignored by Git. On 2026-06-14 it was current at 262 files, 8,732 nodes, and 18,523 edges.
+- The 2026-06-14 migration checkpoint spans auth hardening, first-release features, tests, iOS UI, and docs.
 
-## Stable Architecture
+## Stable Architecture And Guardrails
 
-- `AuthManager` is the public deep module for login, MFA, challenge submission, browser-auth handoff, saved-credential restore, access-mode changes, session acquisition, and logout.
-- Current P0 is real login/session productization, not broad backend expansion or generic UI polish. The first-release core must make global CAS login, per-site session acquisition, per-site reauthorization, saved-credential restore, and failure recovery feel coherent from the user's perspective. Treat confusing auth-state presentation as P0 because it changes the user's belief about whether they were logged out.
-- `CasAuthEngine` is the shared password-login adapter behind `AuthEngine`. It owns CAS form parsing, RSA password encryption via a pluggable encryptor, manual graph captcha, secure-phone MFA, Safety Verify replay, account-type choice, and direct/WebVPN backend selection.
-- Browser auth is represented as a first-class handoff contract, but it is not the active validation route. Real validation on 2026-05-30 showed XJTU CAS rejects the current unregistered `xjtutoolbox://auth` service, and iOS cannot import Safari/ASWebAuthenticationSession HttpOnly cookies into the app cookie store. Keep the real CAS path fail-closed unless an accepted callback/service and artifact exchanger exist.
-- Login, challenge, and browser-auth attempts are governed separately. Browser-auth startup failures, invalid callbacks, and callback artifact-exchange failures share a site-level cooldown so retries cannot bypass throttling with fresh state. Local interactive cooldowns are capped at 2 seconds; do not restore long exponential backoff for normal validation.
-- `SiteSession` is the feature boundary. `HttpSiteSession` is the narrow authenticated HTTP capability used by real feature repositories. Repositories must not own credentials, JWTs, cookies, WebVPN rewriting, or concrete login adapters.
-- `BackendSiteSession` injects auth headers from its authenticator and delegates to `SessionBackend`. `HeaderAuthenticatedSiteSession` lets a site-verification flow install already-obtained headers, which is required when the verification OAuth response itself carries the usable site token. `AuthManager.ensureSession(site)` reuses authenticated sessions and invalidates them when access mode changes.
-- `AccessMode` is `AUTO`, `NORMAL`, or `WEBVPN`; it is persisted through an `AccessModeStore`. WebVPN URL conversion lives in shared and uses the XJTU AES-128-CFB host codec.
-- Shared networking uses `CookieAwareHttpClient` as the single KMP cookie source of truth. Real iOS CAS/JWAPP/ncard session backends wrap `URLSession` in `RequestPacingHttpClient`; keep direct requests paced at 750 ms and WebVPN requests at 1000 ms unless fixture-backed evidence supports a change.
-- Site reauthentication is explicit. If a feature session hits CAS/Safety Verify HTML, it should surface `AuthState.SiteVerificationRequired`. iOS must distinguish this from a global logout: after the user has reached the authenticated app shell, site verification should appear as an inline per-site "补授权" affordance over the main UI; only cold-start or no-session states should use the full login form.
-- `CoreFeatureService` owns `ensureSession(site)` routing for dashboard, schedule, grades, campus card, notices, and empty rooms. SwiftUI should call the service seam, not hold `SiteSession`.
-- `CachedCoreFeatureService` is the shared cache wrapper for first-release feature screens. iOS also gates forced provider-cache clears to avoid request bursts from repeated pull-to-refresh gestures. The real iOS KMP provider has an outer policy-gated UserDefaults stale fallback only for `schedule`, `notices:*`, and `emptyRooms:*`; grades, campus card, and dashboard remain non-persistent because UserDefaults is not a secret store.
+- `AuthManager` is the public auth module. It owns login, captcha/MFA/account-choice challenges, saved-credential restore, site verification, access-mode changes, session acquisition, and logout.
+- `SiteSession`/`HttpSiteSession` is the feature boundary. Repositories may issue business requests through it but must not own credentials, cookies, tokens, WebVPN rewriting, or concrete login adapters.
+- `CoreFeatureService` owns session routing for dashboard, schedule, grades, campus card, notices, empty rooms, library seats, coupons, and school-wide course search. SwiftUI must not call site sessions or school adapters directly.
+- `CookieAwareHttpClient` is the KMP cookie source of truth. Real iOS requests remain paced at 750 ms direct and 1000 ms WebVPN unless fixture-backed evidence supports changing this.
+- Access mode is persisted as `AUTO`, `NORMAL`, or `WEBVPN`; changing it invalidates site sessions.
+- Per-site CAS/Safety Verify failures surface as `SiteVerificationRequired`, not global logout. Once inside the app shell, iOS shows inline “补授权” and retries only after user action.
+- Password, challenge, and browser-auth attempts are separately throttled. Never add automatic password/MFA/browser-auth/WebVPN retry loops.
+- Official browser auth is blocked for production use until XJTU CAS accepts an app callback/Universal Link and returns an app-readable artifact. The current `xjtutoolbox://auth` service was rejected in live validation.
+- Real school-system wiring stays behind explicit validation launch arguments. Default startup remains network-free KMP preview until release productionization is deliberately completed.
+- iOS ATS remains strict except for the scoped `rg.lib.xjtu.edu.cn` exception required by the library seat system's direct HTTP endpoint. Do not restore global arbitrary-load permission.
+- Persistent stale cache is limited to schedule, public notices, and public empty rooms. Credentials stay in Keychain; grades, campus card, dashboard, coupons, library seats, grade details, and course searches are not persisted in UserDefaults.
+- Keep grade, textbook, campus-card, notice, coupon, and school-course paging bounded and user-driven. Public notice aggregation stays sequential.
+- New cross-platform behavior goes into `shared` first. iOS presentation remains restrained, task-first, and native.
 
-## Implemented Surface
+## Implemented First-Release Surface
 
-- Shared KMP module is registered in Gradle, consumed by Android, and configured to produce static iOS frameworks.
-- Shared auth/session/network core includes auth contracts, `DefaultAuthManager`, attempt governors, challenge models, callback parsing, access-mode persistence, WebVPN rewriting, session backends, cookie handling, request pacing, `HttpSiteSession`, and session registry factory.
-- Real shared feature adapters exist for JWAPP schedule/exams/textbooks, JWAPP precise grades, ncard campus card, public XJTU notices, and public empty-room CDN data. Parsers are fixture-tested and guard against CAS/Safety Verify/error-shaped responses before business parsing.
-- Campus-card auth uses `NcardSessionAuthenticator`: request ncard SSO redirect through a CAS/TGC-capable backend, extract one ticket, exchange it for a JWT, then expose only `synjones-auth` headers to the site session. It is intentionally bounded and avoids Android's eager multi-page parallel fetching.
-- JWAPP auth uses `JwappSessionAuthenticator`: probe the relevant module entry once, accept existing SSO/cookie sessions including WebVPN final URLs, and fail closed on CAS/Safety Verify HTML.
-- Mobile grade auth uses `MobileJwappSessionAuthenticator`: keep the school-registered `http://jwapp.xjtu.edu.cn/app/index` redirect URI, let iOS stop before insecure callbacks, upgrade code callbacks to HTTPS inside shared code, accept the live `/app/mobile?token=...` result, and expose only Authorization/User-Agent headers to the grade session.
-- iOS SwiftUI shell includes login, captcha/MFA/account-choice flows, official browser-auth UI, tab navigation, dashboard/tools/profile/settings, Keychain credential storage, UserDefaults access-mode and cooldown stores, feature cache clearing, and KMP bridge adapters.
-- `AppDependencyFactory` is the iOS dependency switchboard. Default startup remains KMP preview and network-free. Real integration modes require explicit launch arguments/schemes such as `-XJTURealLoginValidation`, `-XJTURealPublicData`, and `-XJTURealFirstReleaseCore`.
-- Generated schemes include preview, preview auto-login, preview account-choice, real login validation, real public-data validation, and real first-release core validation. Do not promote real modes to default until live-account cadence is reviewed.
+- Shared auth/session/network core: CAS password login, RSA, graph captcha, MFA, Safety Verify, account choice, attempt governors, saved credentials, WebVPN host codec, cookie handling, request pacing, session registry, and per-site reauthorization.
+- Shared real repositories: JWAPP schedule/exams/textbooks, mobile JWAPP grades and score detail, ncard campus card, public notices, empty-room CDN, first-slice library seats, coupons, and JWXT school-wide course search.
+- Shared repositories and parsers fail closed on auth/error/service-change shapes and have fixture-driven tests.
+- iOS shell: login/challenge flows, inline site verification, homepage, schedule, grades/detail, campus card, notices, empty rooms, library seats, coupons, school-course search, profile, settings, cache clearing, Keychain, and access-mode controls.
+- First-slice library seats intentionally omit map selection, complex neighbor scoring, timed seat-grab automation, and automated sign-out.
+- Preview, login-only, public-data, campus-card/public-data, and real-first-release dependency assemblies exist. The real-first-release assembly is not the default production assembly.
 
-## Latest Validation Checkpoints
+## Completion Assessment
 
-- 2026-05-30: Revalidated migration baseline with `./gradlew :shared:check`, `./gradlew check`, and generic iOS Simulator Debug `xcodebuild`; all passed. Sandboxed execution failed before source compilation because Xcode/CoreSimulator and Gradle wrapper cache need normal host access.
-- 2026-05-30: CAS browser-auth validation failed because XJTU CAS rejected the unregistered custom-scheme service. Treat official browser auth as future/allowlist-dependent.
-- 2026-05-31: Live-validated `XJTUToolboxIOS-RealLoginValidation` with account-owner password entry. CAS login succeeded without graph captcha in that run; business data remained preview by design.
-- 2026-05-31: Live-validated saved-login restore in `XJTUToolboxIOS-RealFirstReleaseCore`. The app showed the saved real CAS account and made one low-frequency schedule auto-load attempt without crashing or looping; JWAPP returned CAS/Safety Verify HTML, now surfaced through site-verification state.
-- 2026-06-06: CodeGraph status reported the local index up to date with 250 files, 8,231 nodes, and 17,236 edges.
-- 2026-06-01: Live-validated `XJTUToolboxIOS-RealFirstReleaseCore` after CAS/JWXT fixes. Real CAS password login obtained TGC, JWXT home SSO established `GS_SESSIONID`/`_WEU`, and real schedule/course/exam requests returned 200. The iOS schedule tab showed real course data. FineReport textbook initialization can still return an auto-submit page without `sessionID`; schedule loading now degrades textbooks to an empty list instead of failing the whole page.
-- 2026-06-01: Live real-core rerun showed ncard SSO can return CAS login HTML instead of an ncard ticket even after JWXT succeeds. `NcardSessionAuthenticator` now surfaces CAS/Safety Verify HTML as `SiteVerificationRequired` for `CAMPUS_CARD` instead of a generic no-ticket failure, matching the JWAPP site-verification path. Unit coverage was added; a post-fix simulator rerun stopped earlier at JWAPP site verification because no saved password was available in the UI.
-- 2026-06-01: Follow-up live debug showed the rebuilt app could complete schedule site verification and load real schedule again, but ncard still returned CAS login HTML. `CasAuthEngine` now uses the ncard entry as the `CAMPUS_CARD` site-verification landing URL and stops there if ncard still returns CAS login, instead of following generic CAS OAuth callback redirects to `login.xjtu.edu.cn/` and surfacing HTTP 404/redirect-loop errors.
-- 2026-06-01: A later live rerun showed JWAPP schedule and grade AJAX calls returning HTTP 403 after CAS success, followed by site-verification prompts. KMP JWAPP auth now follows the `location.href` warmup page emitted by `homeapp/index.do`, schedule/grade repositories send EMAP AJAX `Referer`/`X-Requested-With` headers, and iOS clears stale manual `Cookie` headers on URLSession redirects so cross-domain CAS redirects can reselect cookies for the new host. Shared tests and iOS build passed. Final live password revalidation then succeeded: schedule current-term, courses, exams, grades, ncard card info, and ncard turnover all returned 200 after one explicit `CAMPUS_CARD` verification.
-- 2026-06-01: Real-core launch with an expired JWAPP site session verified the iOS P0 reauth UI: the app stays in the main tab shell and shows an inline "日程 需要补授权" banner instead of returning to the full login page. The banner copy must remain user-facing and should not expose internal names such as JWAPP or raw CAS/Safety Verify errors.
-- 2026-06-02: Real-core auto site verification exposed that `DefaultAuthManager` converted transient `beginSiteVerification` failures into `Anonymous`, which forced iOS back to the full login form. The auth manager now preserves `SiteVerificationRequired` for transient site-verification start failures, while iOS persists the authenticated app-shell context and maps raw CAS reauth failures to user-facing copy. Targeted auth tests, `:shared:check`, iOS build, and simulator real-core revalidation passed; the schedule tab loaded real course data after automatic site verification.
-- 2026-06-02: Live simulator validation with `XJTUToolboxIOS-RealFirstReleaseCore` plus fresh-login launch showed real login succeeds and real feature requests now queue instead of surfacing "已有真实请求进行中" as a red UI error. Schedule and study-assistant sections can appear slowly after prompted authorization instead of staying permanently loading. Campus-card site verification can fail during short retries, then succeed after waiting and retrying; keep the light challenge cooldown and avoid treating these transient failures as global logout.
-- 2026-06-02: P0 dashboard recovery now degrades campus-card reauthorization independently. If homepage schedule data and notices are available but campus card requires `SiteVerificationRequired`, `DefaultCoreFeatureService.dashboard` returns the partial homepage with `campusCard = null`, and iOS syncs shared auth state after successful feature loads so the inline "校园卡需要补授权" banner still appears.
-- 2026-06-02: iOS now resumes feature loading after a site-verification flow returns to `Authenticated`: RootView records the pending site and FeatureStore retries the current tab's relevant request, so users do not need to manually pull-to-refresh after completing "补授权".
-- 2026-06-02: Live simulator validation passed the staged route. `XJTUToolboxIOS-RealLoginValidation` accepted real CAS login while business data stayed preview. Relaunching `XJTUToolboxIOS-RealFirstReleaseCore` reused saved credentials, showed inline "日程 需要补授权" instead of the login page, completed site verification, retried the current schedule tab, and rendered real course data. Logs showed JWAPP grades and ncard card-info/turnover requests returning 200 in the same session.
-- 2026-06-02: P0.5 JWAPP parser hardening: schedule, exam, current-term, and grade parsers now fail closed on nonzero service codes or missing expected module rows instead of returning empty data that looks like a legitimate no-course/no-grade state. Shared parser tests cover these service-change shapes.
-- 2026-06-02: P0.5 ncard transaction parser hardening: campus-card turnover responses now require `data.records`; missing `data`/`records` fails closed, while an explicit empty records array remains a legitimate empty transaction page. Shared parser tests cover malformed and empty transaction payloads.
-- 2026-06-02: P0.5 auth-network diagnostic logging is now gated behind the explicit iOS launch argument `-XJTUAuthNetworkDebug`. Real validation schemes enable it; default/preview launches do not emit the `[DEBUG-AUTH-2FA]` request/response diagnostics.
-- 2026-06-02: Live `XJTUToolboxIOS-RealFirstReleaseCore` rerun with `-XJTUAutoSiteVerification` validated that inline "日程 需要补授权" stays in the app shell, CAS password replay reestablishes JWAPP cookies, and schedule courses/exams reload to real data. A transient FineReport textbook init 502 degraded without blocking the schedule page.
-- 2026-06-02: Live `学辅` rerun validated ncard after parser hardening: ncard SSO, token exchange, card-info, and turnover requests returned 200, and the UI rendered real balance and transactions. The same run exposed a remaining grade-path gap: EMAP grade index loads but `jwapp/sys/cjcx/modules/cjcx/xscjcx.do` returns HTTP 403 even after adding the standard EMAP AJAX `Accept` header. Keep this as the next focused real-data diagnostic; do not blindly switch to the old Android `jwapp.xjtu.edu.cn/api/biz/v410/score` path without validating its separate host/session behavior.
-- 2026-06-05: Live `学辅` validation closed the grade-path gap through the mobile JWAPP API. The real flow kept the registered HTTP callback, iOS stopped before following insecure callbacks, shared upgraded the code callback to HTTPS, accepted the live `/app/mobile?token=...` redirect, installed the returned mobile token into the grade `BackendSiteSession`, then loaded `POST jwapp.xjtu.edu.cn/api/biz/v410/score/termScore` with `json(code=200)`. The same run also loaded ncard token exchange, card info, and turnover with `json(code=200)`. Validation used owner-entered credentials restored from simulator Keychain; no account, password, verification code, or token values belong in launch args, logs, source, or docs.
-- 2026-06-05: P1 iOS recoverability pass added feature-level retry affordances. `FeatureStore.retry(_:)` forces a single requested reload, and homepage, schedule, grades, campus card, notices, and empty-room error states now show direct retry buttons instead of leaving users at a dead red error. Preview iOS build passed.
-- 2026-06-05: P1 cache/settings/home empty-state pass wrapped the real iOS KMP feature provider with policy-gated UserDefaults stale fallback for schedule, public notices, and public empty rooms only. Sensitive grades, campus-card, and dashboard data stay out of persistent cache; Settings cache clearing now confirms user intent, cascades through the Swift cache and the inner shared KMP memory cache, and does not remove Keychain credentials. Homepage empty states now show explicit cards instead of misleading cache copy or silent missing sections. Preview iOS build passed.
-- 2026-06-06: P1 empty-room filtering pass added SwiftUI state and controls for campus, building, date, and section-range selection on the iOS `学辅` tab. `FeatureStore` now sends selected campus/date/section range into the KMP empty-room seam and locally filters by teaching building using the Android campus/building vocabulary. Preview iOS build passed.
-- 2026-06-06: P1 campus-card presentation pass threaded `page`/`pageSize` through the Swift feature seam and KMP bridge, added user-driven "加载更多流水" pagination in `FeatureStore`, and expanded the iOS `学辅` campus-card section with balance, holder, loaded-count, income/expense summary, explicit empty-flow copy, and signed transaction amounts. Preview iOS build passed.
-- 2026-06-06: P1 notice filtering pass added local source filtering for the iOS `学辅` notice section. `FeatureStore` now derives available notice sources from loaded notices, keeps filtering local over the current public notice page, resets stale source selections after reloads, and the SwiftUI section shows source counts plus a filtered-empty state. Preview iOS build passed.
-- 2026-06-06: P1 grade presentation pass expanded the iOS `学辅` grade section with GPA/credit/course/highest-grade/attention summary cards, local "需关注" filtering, sorting by original order/grade point/credit/course name, and clearer row presentation. The UI uses only existing shared fields and does not invent term/rank/detail data. Preview iOS build passed.
-- 2026-06-06: P1 schedule presentation pass added local day filtering for the iOS 日程 tab, sorted courses by weekday/section/name, introduced schedule summary cards for visible courses/all courses/exams/textbooks/current view, and expanded course rows with optional weekday plus week-range text. The UI uses existing shared schedule fields and does not infer current week. Preview iOS build passed.
-- 2026-06-06: P1 textbook presentation pass added local textbook filtering for the iOS 日程 tab. The summary now distinguishes substantive textbook records from "无教材" placeholders, and textbook rows show course, title, author, publisher, and ISBN only from existing shared fields. `git diff --check`, preview iOS build, and `:shared:check` passed.
+Estimates as of 2026-06-14; these are engineering judgments, not measured coverage.
 
-## Guardrails
+| Scope | Completion | Assessment |
+|---|---:|---|
+| First-release feature implementation | 90% | Every declared first-release workflow has a shared repository/service seam and iOS surface. Remaining work is mainly validation and release hardening. |
+| Shared architecture and fixture coverage | 88% | Core boundaries and fail-closed parsers are established; school endpoint churn and action workflows remain residual risk. |
+| Real-account integration confidence | 70% | CAS, saved restore, site verification, schedule, grades, and ncard were live-validated. Library seats, coupons, and school-course search have fixture/preview validation but no recorded end-to-end live validation. |
+| iOS product/release readiness | 40% | Simulator builds pass, but default wiring is preview, iOS has no meaningful automated test target, CI is Android-only, and signing/archive/TestFlight/privacy/assets work is not established. |
+| Broad Android feature parity | 40% | First-release core is present; attendance, class replay, LMS, transcript, textbook center, NeoSchool, venue booking, evaluation, payment code, downloads, widgets, and other Android-only workflows remain later releases. |
+| Overall first iOS release readiness | 72% | Feature-complete enough for a controlled alpha, not ready for unattended production release. |
 
-- Existing Android `MainActivity.kt` is still large and coupled. Avoid adding migration logic there unless bridging is unavoidable.
-- Android legacy concrete `*Login` objects and newer `SessionManager` still coexist. Migration work should converge on `SiteSession`.
-- Keep WebVPN algorithm changes in shared; Android `WebVpnUtil` delegates URL conversion there.
-- Default iOS app wiring must remain preview-only to avoid accidental CAS/JWAPP/ncard traffic during normal simulator launches.
-- School endpoints change frequently. Add or update fixture tests before changing login, parser, session-auth, or request-pacing behavior.
-- Current auth architecture assessment: no rewrite is needed. Keep `AuthManager` as the public module and continue extracting volatile CAS internals behind it.
-- The compliant current route is app-internal password login with manual graph captcha and MFA/Safety Verify challenges. Do not implement OCR/bypass behavior or high-frequency retry loops.
-- Interactive local throttling should stay light: password, challenge, site-verification, and browser-auth cooldowns should remain at or below 2 seconds unless live evidence shows a server-side protection issue.
-- Current first-release priority order: P0 login/session/补授权 coherence and recoverability; P0.5 harden already-wired real data paths and fixtures; P1 refine first-release UI presentation, loading, empty, and error states; P2 add new backend/business surfaces.
-- Update this file only when a new stable capability, architectural boundary, validation checkpoint, or project constraint would save future agents from rereading source history.
+## Latest Validation Baseline
+
+- 2026-06-05: live iOS validation passed CAS login, saved credential reuse, mobile JWAPP grade token/grade-list flow, schedule, ncard token exchange/card info/turnover, and inline site reauthorization behavior. Grade detail has fixture/build/presentation validation but no recorded live end-to-end check.
+- 2026-06-14: library seats, coupons, and school-course search first slices were present; school-course search received targeted shared tests and simulator presentation validation, but not a live-account query.
+- 2026-06-14: `./gradlew check` passed in 24m04s; iOS simulator Debug build passed; `git diff --check` passed; simulator visual QA passed; CodeGraph was synchronized.
+- Test shape: shared has substantial fixture-driven common/JVM tests; Android tests are sparse and iOS has no meaningful XCTest/UI-test suite.
+
+## Remaining Milestones
+
+Difficulty: `M` bounded multi-file work, `H` cross-layer or external-system work, `VH` release/architecture work with broad blast radius. Recommended Codex reasoning levels are `medium`, `high`, and `xhigh`.
+
+| Priority | Remaining node / done condition | Difficulty | Codex reasoning |
+|---|---|---:|---|
+| R0 | Create a clean migration checkpoint: review dirty scope, split intentional changes, run final regression, then commit without absorbing unrelated edits. | M | high |
+| R1 | Live-validate library seats, coupons, and school-course search with owner-entered credentials; cover success, empty, expired-session, site-verification, paging/action errors, and direct/WebVPN where supported. | H | xhigh |
+| R1 | Execute and document a first-release acceptance matrix across cold start, saved restore, captcha/MFA/account choice, per-site reauth, access-mode switch, offline/stale cache, retry, pagination, logout, and relaunch. | H | xhigh |
+| R1 | Add iOS automated coverage: XCTest targets for Swift bridge/store/cache/auth-state behavior plus a small preview UI smoke suite; run it in macOS CI with shared checks. | H | high |
+| R1 | Productionize the iOS assembly: make release configuration use real dependencies without debug launch arguments, keep preview schemes isolated, and verify no debug auth logging or preview data leaks into Release. | VH | xhigh |
+| R1 | Establish iOS release engineering: app identity/signing, icons/assets, privacy manifest and disclosures, archive/export validation, versioning, crash/log policy, TestFlight pipeline, and release checklist. | VH | xhigh |
+| R2 | Harden endpoint-change operations: sanitized diagnostics, fixture refresh workflow, explicit service-change copy, and a controlled live-validation cadence for school-system changes. | H | high |
+| R2 | Decide first post-release slice from real demand; do not start broad parity by default. Candidate slices: attendance, schedule export/custom courses, or richer library-seat workflow. | M | high |
+| Later | Port Android-only modules as independent vertical slices: attendance; class replay/downloads; LMS; transcript; textbook center; NeoSchool; venue booking; evaluation; payment code; widgets. | VH each | xhigh |
+
+## Recommended Execution Order
+
+1. R0 checkpoint the current migration state.
+2. Complete R1 live validation and acceptance matrix; fix only evidence-backed failures.
+3. Add iOS tests/CI, then productionize release wiring.
+4. Complete signing, privacy, archive, and TestFlight work; ship a controlled alpha.
+5. Choose one post-release vertical slice from observed user demand.

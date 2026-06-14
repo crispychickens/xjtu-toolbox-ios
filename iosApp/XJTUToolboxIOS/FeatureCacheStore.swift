@@ -97,6 +97,10 @@ final class CachedFeatureProvider: SharedFeatureProviding, FeatureCacheClearing 
         )
     }
 
+    func gradeDetail(gradeId: String) async throws -> SharedGradeDetail {
+        try await provider.gradeDetail(gradeId: gradeId)
+    }
+
     func campusCard(page: Int, pageSize: Int) async throws -> SharedCampusCardSnapshot {
         try await cached(
             SharedCampusCardSnapshot.self,
@@ -105,11 +109,11 @@ final class CachedFeatureProvider: SharedFeatureProviding, FeatureCacheClearing 
         )
     }
 
-    func notices(page: Int) async throws -> [SharedNoticeItem] {
+    func noticePage(page: Int) async throws -> SharedNoticePage {
         try await cached(
-            [SharedNoticeItem].self,
+            SharedNoticePage.self,
             key: "notices:\(page)",
-            fetch: { try await provider.notices(page: page) }
+            fetch: { try await provider.noticePage(page: page) }
         )
     }
 
@@ -118,6 +122,42 @@ final class CachedFeatureProvider: SharedFeatureProviding, FeatureCacheClearing 
             [SharedEmptyRoom].self,
             key: "emptyRooms:\(campus):\(date):\(sections.lowerBound):\(sections.upperBound)",
             fetch: { try await provider.emptyRooms(campus: campus, date: date, sections: sections) }
+        )
+    }
+
+    func librarySeats(areaCode: String?) async throws -> SharedLibrarySeatSnapshot {
+        try await cached(
+            SharedLibrarySeatSnapshot.self,
+            key: "librarySeats:\(areaCode ?? "")",
+            fetch: { try await provider.librarySeats(areaCode: areaCode) }
+        )
+    }
+
+    func bookLibrarySeat(seatId: String, areaCode: String, allowSwap: Bool) async throws -> SharedLibrarySeatBookingResult {
+        try await provider.bookLibrarySeat(seatId: seatId, areaCode: areaCode, allowSwap: allowSwap)
+    }
+
+    func coupons(filter: SharedCouponFilter, page: Int, pageSize: Int) async throws -> SharedCouponPage {
+        try await provider.coupons(filter: filter, page: page, pageSize: pageSize)
+    }
+
+    func schoolCourses(
+        termCode: String?,
+        courseName: String,
+        teacher: String,
+        campusCode: String,
+        weekday: Int,
+        page: Int,
+        pageSize: Int
+    ) async throws -> SharedSchoolCoursePage {
+        try await provider.schoolCourses(
+            termCode: termCode,
+            courseName: courseName,
+            teacher: teacher,
+            campusCode: campusCode,
+            weekday: weekday,
+            page: page,
+            pageSize: pageSize
         )
     }
 

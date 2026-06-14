@@ -23,7 +23,11 @@ class JwappAcademicParserTest {
         assertEquals(1, exams.size)
         assertEquals("高等数学", exams.single().courseName)
         assertEquals("2026-01-10 09:00-11:00", exams.single().time)
+        assertEquals("2026-01-10", exams.single().examDate)
+        assertEquals("09:00-11:00", exams.single().examTime)
+        assertEquals("MATH1001", exams.single().courseCode)
         assertEquals("主楼-101", exams.single().location)
+        assertEquals("12", exams.single().seatNumber)
     }
 
     @Test
@@ -37,6 +41,7 @@ class JwappAcademicParserTest {
         assertEquals("92", page.grades[0].score)
         assertEquals(3.0, page.grades[0].credit)
         assertEquals(3.9, page.grades[0].gradePoint)
+        assertEquals("2025-2026-1", page.grades[0].termCode)
         assertEquals("优秀", page.grades[1].score)
     }
 
@@ -48,6 +53,8 @@ class JwappAcademicParserTest {
         assertEquals("高等数学", textbooks[0].courseName)
         assertEquals("高等数学 第八版", textbooks[0].textbookName)
         assertEquals("9787040589812", textbooks[0].isbn)
+        assertEquals("第八版", textbooks[0].edition)
+        assertEquals("58.00 元", textbooks[0].price)
         assertEquals(true, textbooks[0].hasSubstantiveTextbook)
         assertEquals(false, textbooks[1].hasSubstantiveTextbook)
         assertEquals("123456", FineReportTextbookParser.extractSessionId(textbookSessionHtml))
@@ -124,7 +131,7 @@ internal val examJson = """
       "datas": {
         "wdksap": {
           "rows": [
-            {"KCM":"高等数学","KSRQ":"2026-01-10 00:00:00","KSSJMS":"2026-01-10 09:00-11:00","JASMC":"主楼-101","ZWH":"12"}
+            {"KCM":"高等数学","KCH":"MATH1001","KSRQ":"2026-01-10 00:00:00","KSSJMS":"2026-01-10 09:00-11:00","JASMC":"主楼-101","ZWH":"12"}
           ]
         }
       }
@@ -151,9 +158,9 @@ internal val textbookTableHtml = """
     <html>
       <body>
         <table>
-          <tr><th>课程名</th><th>书名</th><th>作者</th><th>出版社</th><th>ISBN</th></tr>
-          <tr><td>高等数学</td><td>高等数学 第八版</td><td>同济大学数学系</td><td>高等教育出版社</td><td>9787040589812</td></tr>
-          <tr><td>线性代数</td><td>无教材</td><td></td><td></td><td></td></tr>
+          <tr><th>课程名</th><th>书名</th><th>作者</th><th>出版社</th><th>ISBN</th><th>版次</th><th>定价</th></tr>
+          <tr><td>高等数学</td><td>高等数学 第八版</td><td>同济大学数学系</td><td>高等教育出版社</td><td>9787040589812</td><td>第八版</td><td>58.00 元</td></tr>
+          <tr><td>线性代数</td><td>无教材</td><td></td><td></td><td></td><td></td><td></td></tr>
         </table>
       </body>
     </html>

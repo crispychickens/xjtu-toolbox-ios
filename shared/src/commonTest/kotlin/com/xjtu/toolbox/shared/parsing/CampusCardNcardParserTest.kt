@@ -25,11 +25,13 @@ class CampusCardNcardParserTest {
         assertEquals(4, page.records.size)
         assertEquals(TransactionKind.EXPENSE, page.records[0].kind)
         assertEquals(-12.0, page.records[0].amountYuan)
+        assertEquals(30.5, page.records[0].balanceAfterYuan)
         assertEquals("康桥苑", page.records[0].merchant)
         assertEquals(TransactionKind.EXPENSE, page.records[1].kind)
         assertEquals(-3.5, page.records[1].amountYuan)
         assertEquals(TransactionKind.INCOME, page.records[2].kind)
         assertEquals(100.0, page.records[2].amountYuan)
+        assertEquals(127.0, page.records[2].balanceAfterYuan)
         assertEquals(TransactionKind.INCOME, page.records[3].kind)
         assertEquals(50.0, page.records[3].amountYuan)
     }

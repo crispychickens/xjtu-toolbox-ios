@@ -266,7 +266,7 @@ private fun CouponSummaryCard(
     leftAmountFen: Long
 ) {
     val countLabel = when (filter) {
-        CouponFilter.AVAILABLE -> "可领取 $total 张"
+        CouponFilter.AVAILABLE -> "待使用 $total 张"
         CouponFilter.USABLE -> "可使用 $total 张"
         CouponFilter.USED_UP -> "已用完 $total 张"
         CouponFilter.EXPIRED -> "已过期 $total 张"
@@ -430,7 +430,7 @@ private fun CouponImage(login: CouponLogin, url: String) {
 private fun CouponStatusPill(coupon: CouponRecord, filter: CouponFilter) {
     val gray = Color(0xFF7A7F87)
     val (text, color) = when (filter) {
-        CouponFilter.AVAILABLE -> "可领取" to MiuixTheme.colorScheme.primary
+        CouponFilter.AVAILABLE -> "待使用" to gray
         CouponFilter.USABLE -> "可使用" to MiuixTheme.colorScheme.primary
         CouponFilter.USED_UP -> "已用完" to gray
         CouponFilter.EXPIRED -> "已过期" to gray

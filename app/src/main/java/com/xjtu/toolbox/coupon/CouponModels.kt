@@ -16,7 +16,7 @@ enum class CouponFilter(
     val expired: String,
     val emptyTitle: String
 ) {
-    AVAILABLE("可领取", "0", "", "3", "暂无可领取加餐券"),
+    AVAILABLE("待使用", "0", "", "3", "暂无待使用加餐券"),
     USABLE("可使用", "1", "1", "3", "暂无可使用加餐券"),
     USED_UP("已用完", "", "0", "", "暂无已用完加餐券"),
     EXPIRED("已过期", "", "1", "2", "暂无已过期加餐券")

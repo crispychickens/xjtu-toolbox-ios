@@ -31,7 +31,7 @@ The current source is an Android app. This repository now also contains the KMP 
 - BrowserAuthCallback: the validated callback artifact from official login, carrying the returned state plus a CAS `ticket` or OAuth-style `code`.
 - Browser Auth Start: the user-triggered request to prepare/open the official login handoff; transient failures are throttled separately from callback submissions.
 - WebVPN Host Codec: the adapter responsible for school WebVPN host encoding/decoding.
-- Core Feature: first iOS migration scope: auth, schedule, grades, campus card, notices, empty rooms, settings, and cache.
+- Core Feature: iOS migration scope exposed through `CoreFeatureService`, including schedule, grades, campus card, notices, empty rooms, library seats, coupons, school-wide course search, settings, and cache.
 - KMP iOS Bridge: the Swift adapter layer that maps generated `XJTUToolboxShared.framework` exports into SwiftUI-facing auth and feature interfaces.
 - KMP Platform Adapter: an iOS implementation of a shared seam such as CredentialVault, AccessModeStore, LoginAttemptStore, CookieStore, or HttpClient.
 - Cookie-Aware HttpClient: the shared wrapper that attaches stored cookies to outgoing requests and persists `Set-Cookie` responses.
