@@ -17,6 +17,8 @@ targets:
     info:
       path: XJTUToolboxIOS/Info.plist
       properties:
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -27,6 +29,10 @@ targets:
               NSExceptionAllowsInsecureHTTPLoads: true
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.xjtu.toolbox.ios
+      MARKETING_VERSION: 1.0.0
+      CURRENT_PROJECT_VERSION: 1
+      VERSIONING_SYSTEM: apple-generic
+      TARGETED_DEVICE_FAMILY: 1
       FRAMEWORK_SEARCH_PATHS:
         - "$(inherited)"
         - "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"

@@ -15,22 +15,23 @@ This is the release-facing evidence checklist for the SwiftUI/KMP first release.
 | Area | Scenario | Required evidence | Current status |
 |---|---|---|---|
 | Build | Full Gradle regression | `./gradlew check` | Passed 2026-06-14 |
-| Build | Generated iOS project builds | `xcodegen generate` then simulator Debug and Release builds | Passed 2026-06-14 |
+| Build | Generated iOS project builds and archives | `xcodegen generate`, simulator tests/builds, then unsigned generic-device Release archive validation | Passed locally 2026-06-14; generic-device archive validated as `1.0.0 (1)`, iphoneos arm64, iPhone-only, with matching dSYM |
 | Build | iOS XCTest suite | `xcodebuild test` on generated project | Local suite passed 18/18 on 2026-06-14: 16 unit tests plus 2 preview UI smoke tests; remote CI pending |
+| Build | Version and build-number policy | `iosApp/project.yml` inspection plus archive consistency check | `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` centralized as `1.0.0 (1)`; archive validator enforces major.minor.patch and positive build number |
 | Security | Debug default launch is preview-safe and network-free | Preview launch plus dependency-mode check | Implemented and covered by launch-policy XCTest; UI smoke also proves default Debug launch stays on login screen |
 | Security | Release has no preview data/debug auth logging | Launch-policy XCTest plus clean Release runtime/archive inspection | Policy tests passed and Debug/Release builds passed 2026-06-14. Post-fix simulator Release smoke stayed on real CAS login despite preview/public/debug launch args, and no `[DEBUG-AUTH-2FA]` log appeared. Signed archive/TestFlight inspection pending |
 | Security | ATS is strict except library direct-HTTP host | Generated and built `Info.plist` inspection | Passed 2026-06-14 |
 | Privacy | Privacy manifest and required-reason APIs | `PrivacyInfo.xcprivacy` inspection plus Release bundle check | Manifest added and bundled 2026-06-14. It declares no tracking, no tracking domains, no collected data types, and UserDefaults required-reason API `CA92.1`. App Store privacy questionnaire/disclosure review pending |
 | Auth | Fresh CAS login | Owner validation: success plus sanitized state evidence | Previously passed |
 | Auth | Saved credential restore and relaunch | Owner validation | Previously passed |
-| Auth | Captcha, MFA/Safety Verify, account choice | Preview each; owner validation when naturally presented | Partial |
+| Auth | Captcha, MFA/Safety Verify, account choice | Preview each; owner validation when naturally presented | Partial; deterministic AuthStore regression proves explicit fresh login clears stale authenticated-session context before account choice |
 | Auth | Site expiry stays inside app shell | Owner validation of inline “补授权” and resumed feature load | Previously passed; AuthStore XCTest now covers site-verification staying inside an authenticated shell |
 | Auth | Access-mode switch invalidates sessions | Owner validation for supported direct/WebVPN routes | Not complete |
 | Cache | Only schedule/notices/empty rooms persist stale data | Unit tests plus UserDefaults inspection | Unit coverage added |
 | Cache | Release cannot read Debug/preview stale feature cache | Cache namespace tests plus clean Release runtime smoke | Build/mode cache-prefix tests passed 2026-06-14. Clean Release `UserDefaults` was empty; Debug preview schedule smoke followed by Release overlay launch returned to real CAS login instead of preview shell. Preserved-container stale-cache proof on signed/device or TestFlight pending |
 | Cache | Clear cache does not remove Keychain credentials | Unit/manual validation | Partial |
 | Recovery | Retry, empty, malformed, offline, and stale fallback states | Automated/preview/public evidence per feature | Partial; AuthStore XCTest covers logout cleanup, session-context persistence, and site-verification-without-shell behavior; preview UI smoke covers auto-login schedule rendering |
-| Release | Signed archive, privacy disclosures, versioning, TestFlight | Release evidence | Simulator Release smoke passed and privacy manifest is bundled; signed archive/TestFlight not started |
+| Release | Signed archive, privacy disclosures, versioning, TestFlight | Release evidence | Unsigned generic-device archive and release checklist passed locally; signed archive/export and TestFlight not started |
 
 ## Feature Matrix
 

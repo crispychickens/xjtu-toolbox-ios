@@ -125,7 +125,9 @@ final class AuthStoreTests: XCTestCase {
                 site: nil
             )
         )
+        UserDefaults.standard.set(true, forKey: sessionContextKey)
         let subject = AuthStore(authManager: authManager)
+        XCTAssertTrue(subject.hasAuthenticatedSessionContext)
         subject.username = "3124000000"
         subject.password = "account"
         subject.captchaCode = "abcd"

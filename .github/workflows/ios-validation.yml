@@ -59,11 +59,15 @@ jobs:
             -scheme XJTUToolboxIOS \
             -destination "id=${{ steps.simulator.outputs.id }}"
 
-      - name: Build iOS Release configuration
-        working-directory: iosApp
+      - name: Build unsigned iOS Release archive
         run: |
-          xcodebuild build \
-            -project XJTUToolboxIOS.xcodeproj \
+          xcodebuild archive \
+            -project iosApp/XJTUToolboxIOS.xcodeproj \
             -scheme XJTUToolboxIOS \
             -configuration Release \
-            -destination "id=${{ steps.simulator.outputs.id }}"
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/XJTUToolboxIOS.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Validate unsigned iOS Release archive
+        run: iosApp/scripts/validate-release-archive.sh "$RUNNER_TEMP/XJTUToolboxIOS.xcarchive"

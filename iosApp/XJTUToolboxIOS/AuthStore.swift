@@ -95,6 +95,7 @@ final class AuthStore: ObservableObject {
             errorMessage = "请输入学号"
             return
         }
+        clearAuthenticatedSessionContext()
         isBusy = true
         errorMessage = nil
         state = .authenticating(username: username)
@@ -253,12 +254,16 @@ final class AuthStore: ObservableObject {
             errorMessage = hasAuthenticatedSessionContext ? nil : message
             browserAuthRequest = nil
         case .anonymous, .passwordInvalidated:
-            hasAuthenticatedSessionContext = false
-            UserDefaults.standard.removeObject(forKey: PersistedKeys.hasAuthenticatedSessionContext)
+            clearAuthenticatedSessionContext()
             browserAuthRequest = nil
         default:
             browserAuthRequest = nil
         }
+    }
+
+    private func clearAuthenticatedSessionContext() {
+        hasAuthenticatedSessionContext = false
+        UserDefaults.standard.removeObject(forKey: PersistedKeys.hasAuthenticatedSessionContext)
     }
 
     private func preferredAccountChoiceId(in challenge: SharedAccountChoiceChallenge) -> String {

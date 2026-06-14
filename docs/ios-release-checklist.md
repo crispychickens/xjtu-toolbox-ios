@@ -1,0 +1,68 @@
+# iOS Release Checklist
+
+Use this checklist for every build promoted beyond local preview validation. The unsigned archive gate is repeatable locally and in CI; signed archive, export, App Store Connect, and TestFlight gates require the release owner's Apple Developer credentials.
+
+## Version Policy
+
+- `iosApp/project.yml` is the source of truth for `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`.
+- `MARKETING_VERSION` uses `major.minor.patch`.
+- `CURRENT_PROJECT_VERSION` is a positive integer and must increase for every App Store Connect upload.
+- The first iOS release is intentionally iPhone-only. Do not add iPad to `TARGETED_DEVICE_FAMILY` until its orientations and layouts have their own acceptance evidence.
+- Run `xcodegen generate` after changing project settings and commit the generated Xcode project with its source configuration.
+
+## Automated Gate
+
+Run the full shared and iOS regression suite, then produce and inspect a device archive without requiring local signing credentials:
+
+```bash
+./gradlew :shared:check
+
+cd iosApp
+xcodegen generate
+cd ..
+
+xcodebuild test \
+  -project iosApp/XJTUToolboxIOS.xcodeproj \
+  -scheme XJTUToolboxIOS \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6'
+
+xcodebuild archive \
+  -project iosApp/XJTUToolboxIOS.xcodeproj \
+  -scheme XJTUToolboxIOS \
+  -configuration Release \
+  -destination 'generic/platform=iOS' \
+  -archivePath /tmp/XJTUToolboxIOS.xcarchive \
+  CODE_SIGNING_ALLOWED=NO
+
+iosApp/scripts/validate-release-archive.sh /tmp/XJTUToolboxIOS.xcarchive
+```
+
+The archive validator checks:
+
+- bundle identity, `major.minor.patch` marketing version, positive build number, minimum iOS version, and iPhone-only device family;
+- Release device platform and arm64 executable;
+- privacy manifest declarations and scoped ATS exception;
+- matching app executable and dSYM UUIDs;
+- signing identity/team and `codesign` verification when invoked with `REQUIRE_SIGNED=1`.
+
+## Signed Archive Gate
+
+Before the first TestFlight upload:
+
+1. Confirm the final App Store bundle identifier and assign the Apple Developer team in a release-owner-only configuration.
+2. Confirm the distribution certificate and App Store provisioning profile are valid.
+3. Archive the main `XJTUToolboxIOS` scheme with Release configuration and no Debug validation arguments.
+4. Run `REQUIRE_SIGNED=1 iosApp/scripts/validate-release-archive.sh <archive-path>`.
+5. Export through Xcode Organizer or an approved export configuration and record sanitized evidence.
+6. Confirm App Store Connect accepts the bundle identifier, version, build number, privacy manifest, and export.
+
+## App Store And TestFlight Gate
+
+1. Supply final app icon and App Store listing assets.
+2. Review App Store privacy questionnaire answers against actual network, Keychain, UserDefaults, cookie, and school-account behavior.
+3. Provide privacy policy/support URLs and review notes without credentials or personal data.
+4. Upload the signed build and wait for App Store Connect processing.
+5. Install from TestFlight on a real device and execute `docs/ios-first-release-acceptance.md`.
+6. Verify upgrade behavior from the previous TestFlight build, including no Debug/preview stale-cache read.
+7. Verify crash/log policy and inspect device logs for credentials, cookies, tickets, verification codes, and debug-auth output.
+8. Promote only after every mandatory acceptance gate has release evidence.

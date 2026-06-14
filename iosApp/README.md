@@ -45,6 +45,8 @@ The app target is intentionally thin:
 
 The XcodeGen project in `project.yml` runs `:shared:embedAndSignAppleFrameworkForXcode` before compiling the app and searches the standard KMP `shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)` output path. The KMP build script is marked as intentionally always-running so Xcode does not skip framework embedding when shared code changes.
 
+`project.yml` is also the source of truth for the iOS marketing version, build number, and first-release iPhone-only device family. `scripts/validate-release-archive.sh` inspects a generic-device archive for identity/version consistency, arm64 and dSYM integrity, privacy/ATS policy, and optional signing evidence. Use `docs/ios-release-checklist.md` for the complete promotion gate.
+
 Local build commands:
 
 ```bash
