@@ -27,6 +27,7 @@
 		CA58983D6D297E9D0A46AEEB /* FeatureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110296FB843705633BA1FE46 /* FeatureStore.swift */; };
 		D84A8C977E3900E0E326B4DB /* FeatureCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A66E4AD9702D1A22A56420 /* FeatureCacheStore.swift */; };
 		EBA8824D2712AFA6AB255EFD /* PreviewSmokeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A3DBD31239F05414A4BCF8B /* PreviewSmokeUITests.swift */; };
+		ED0EB4FB4182CEAE35E820E4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D64D7AC29C1FD92C09E9A64D /* PrivacyInfo.xcprivacy */; };
 		F746E79F02B6CB1224E5C1CA /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63AD938F739DB7F22302947 /* Router.swift */; };
 /* End PBXBuildFile section */
 
@@ -68,6 +69,7 @@
 		A4CD66D62782BAEB3C88E108 /* SharedBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedBridge.swift; sourceTree = "<group>"; };
 		C26834A78933293B7DB2F0F3 /* KmpPlatformAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpPlatformAdapters.swift; sourceTree = "<group>"; };
 		D07C264B009C6E4C68E653DD /* KmpBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpBridge.swift; sourceTree = "<group>"; };
+		D64D7AC29C1FD92C09E9A64D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		D8DCFD38D284D30677D684B0 /* OfficialBrowserAuthPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficialBrowserAuthPresenter.swift; sourceTree = "<group>"; };
 		E5CDFBC9F0ACD77BE25B8DEA /* FeatureCacheStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureCacheStoreTests.swift; sourceTree = "<group>"; };
 		E63AD938F739DB7F22302947 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
@@ -131,6 +133,7 @@
 				3856C0326B514E15A62E09B6 /* LaunchArguments.swift */,
 				333E176D39B68B3FCD7C8293 /* LoginAttemptStore.swift */,
 				D8DCFD38D284D30677D684B0 /* OfficialBrowserAuthPresenter.swift */,
+				D64D7AC29C1FD92C09E9A64D /* PrivacyInfo.xcprivacy */,
 				46E8DD725AD9D280D9F26885 /* RootView.swift */,
 				E63AD938F739DB7F22302947 /* Router.swift */,
 				A4CD66D62782BAEB3C88E108 /* SharedBridge.swift */,
@@ -166,6 +169,7 @@
 			buildPhases = (
 				C40F9129F913186F3D4EC38E /* Build KMP Shared Framework */,
 				051188AD44533FFF03818026 /* Sources */,
+				A5D8AEAC11AFE5854816CF31 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -230,6 +234,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A5D8AEAC11AFE5854816CF31 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ED0EB4FB4182CEAE35E820E4 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		C40F9129F913186F3D4EC38E /* Build KMP Shared Framework */ = {

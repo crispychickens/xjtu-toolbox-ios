@@ -20,6 +20,7 @@ This is the release-facing evidence checklist for the SwiftUI/KMP first release.
 | Security | Debug default launch is preview-safe and network-free | Preview launch plus dependency-mode check | Implemented and covered by launch-policy XCTest; UI smoke also proves default Debug launch stays on login screen |
 | Security | Release has no preview data/debug auth logging | Launch-policy XCTest plus clean Release runtime/archive inspection | Policy tests passed and Debug/Release builds passed 2026-06-14. Post-fix simulator Release smoke stayed on real CAS login despite preview/public/debug launch args, and no `[DEBUG-AUTH-2FA]` log appeared. Signed archive/TestFlight inspection pending |
 | Security | ATS is strict except library direct-HTTP host | Generated and built `Info.plist` inspection | Passed 2026-06-14 |
+| Privacy | Privacy manifest and required-reason APIs | `PrivacyInfo.xcprivacy` inspection plus Release bundle check | Manifest added and bundled 2026-06-14. It declares no tracking, no tracking domains, no collected data types, and UserDefaults required-reason API `CA92.1`. App Store privacy questionnaire/disclosure review pending |
 | Auth | Fresh CAS login | Owner validation: success plus sanitized state evidence | Previously passed |
 | Auth | Saved credential restore and relaunch | Owner validation | Previously passed |
 | Auth | Captcha, MFA/Safety Verify, account choice | Preview each; owner validation when naturally presented | Partial |
@@ -29,7 +30,7 @@ This is the release-facing evidence checklist for the SwiftUI/KMP first release.
 | Cache | Release cannot read Debug/preview stale feature cache | Cache namespace tests plus clean Release runtime smoke | Build/mode cache-prefix tests passed 2026-06-14. Clean Release `UserDefaults` was empty; Debug preview schedule smoke followed by Release overlay launch returned to real CAS login instead of preview shell. Preserved-container stale-cache proof on signed/device or TestFlight pending |
 | Cache | Clear cache does not remove Keychain credentials | Unit/manual validation | Partial |
 | Recovery | Retry, empty, malformed, offline, and stale fallback states | Automated/preview/public evidence per feature | Partial; AuthStore XCTest covers logout cleanup, session-context persistence, and site-verification-without-shell behavior; preview UI smoke covers auto-login schedule rendering |
-| Release | Signed archive, privacy disclosures, versioning, TestFlight | Release evidence | Simulator Release smoke passed; signed archive/TestFlight not started |
+| Release | Signed archive, privacy disclosures, versioning, TestFlight | Release evidence | Simulator Release smoke passed and privacy manifest is bundled; signed archive/TestFlight not started |
 
 ## Feature Matrix
 
