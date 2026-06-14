@@ -76,7 +76,7 @@ Local validation schemes:
 5. `XJTUToolboxIOS-RealPublicData` enters the `学辅` tab with preview auth, preview auth-gated features, and real public notices plus real public empty-room CDN data. This is the first no-account integration path and can validate empty-room campus/building/date/section filters without a live account.
 6. `XJTUToolboxIOS-RealFirstReleaseCore` uses saved/entered real CAS credentials with the real first-release repositories. Feature screens auto-attempt each load at most once per app lifetime; failures do not auto-retry on redraw or tab switching.
 
-The generated `XJTUToolboxIOSTests` target starts the iOS automated-test baseline. Run it through the main scheme:
+The generated `XJTUToolboxIOSTests` target includes cache/store, launch-policy, auth-state, and KMP bridge contract coverage. `KmpBridgeContractTests` calls the generated shared framework and every first-release feature method rather than replacing the KMP layer with Swift spies. Run the unit/contract and UI-smoke suites through the main scheme:
 
 ```bash
 xcodebuild test -project iosApp/XJTUToolboxIOS.xcodeproj \

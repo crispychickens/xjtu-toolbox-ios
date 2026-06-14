@@ -16,7 +16,7 @@ This is the release-facing evidence checklist for the SwiftUI/KMP first release.
 |---|---|---|---|
 | Build | Full Gradle regression | `./gradlew check` | Passed 2026-06-14 |
 | Build | Generated iOS project builds and archives | `xcodegen generate`, simulator tests/builds, then unsigned generic-device Release archive validation | Passed locally 2026-06-14; generic-device archive validated as `1.0.0 (1)`, iphoneos arm64, iPhone-only, with matching dSYM |
-| Build | iOS XCTest suite | `xcodebuild test` on generated project | Local suite passed 18/18 on 2026-06-14: 16 unit tests plus 2 preview UI smoke tests; remote CI pending |
+| Build | iOS XCTest suite | `xcodebuild test` on generated project | Local suite passed 20/20 on 2026-06-14: 18 unit/contract tests plus 2 preview UI smoke tests. KMP bridge contracts cover auth mapping and every first-release feature method through the generated framework; remote CI pending |
 | Build | Version and build-number policy | `iosApp/project.yml` inspection plus archive consistency check | `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` centralized as `1.0.0 (1)`; archive validator enforces major.minor.patch and positive build number |
 | Security | Debug default launch is preview-safe and network-free | Preview launch plus dependency-mode check | Implemented and covered by launch-policy XCTest; UI smoke also proves default Debug launch stays on login screen |
 | Security | Release has no preview data/debug auth logging | Launch-policy XCTest plus clean Release runtime/archive inspection | Policy tests passed and Debug/Release builds passed 2026-06-14. Post-fix simulator Release smoke stayed on real CAS login despite preview/public/debug launch args, and no `[DEBUG-AUTH-2FA]` log appeared. Signed archive/TestFlight inspection pending |
@@ -30,7 +30,7 @@ This is the release-facing evidence checklist for the SwiftUI/KMP first release.
 | Cache | Only schedule/notices/empty rooms persist stale data | Unit tests plus UserDefaults inspection | Unit coverage added |
 | Cache | Release cannot read Debug/preview stale feature cache | Cache namespace tests plus clean Release runtime smoke | Build/mode cache-prefix tests passed 2026-06-14. Clean Release `UserDefaults` was empty; Debug preview schedule smoke followed by Release overlay launch returned to real CAS login instead of preview shell. Preserved-container stale-cache proof on signed/device or TestFlight pending |
 | Cache | Clear cache does not remove Keychain credentials | Unit/manual validation | Partial |
-| Recovery | Retry, empty, malformed, offline, and stale fallback states | Automated/preview/public evidence per feature | Partial; AuthStore XCTest covers logout cleanup, session-context persistence, and site-verification-without-shell behavior; preview UI smoke covers auto-login schedule rendering |
+| Recovery | Retry, empty, malformed, offline, and stale fallback states | Automated/preview/public evidence per feature | Partial; AuthStore XCTest covers logout cleanup, session-context persistence, and site-verification-without-shell behavior; KMP bridge contracts cover preview-backed auth/feature mappings; preview UI smoke covers auto-login schedule rendering |
 | Release | Signed archive, privacy disclosures, versioning, TestFlight | Release evidence | Unsigned generic-device archive and release checklist passed locally; signed archive/export and TestFlight not started |
 
 ## Feature Matrix
