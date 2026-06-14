@@ -58,3 +58,12 @@ jobs:
             -project XJTUToolboxIOS.xcodeproj \
             -scheme XJTUToolboxIOS \
             -destination "id=${{ steps.simulator.outputs.id }}"
+
+      - name: Build iOS Release configuration
+        working-directory: iosApp
+        run: |
+          xcodebuild build \
+            -project XJTUToolboxIOS.xcodeproj \
+            -scheme XJTUToolboxIOS \
+            -configuration Release \
+            -destination "id=${{ steps.simulator.outputs.id }}"

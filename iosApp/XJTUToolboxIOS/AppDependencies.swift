@@ -34,7 +34,12 @@ enum AppDependencyFactory {
     static func makePreview() -> AppDependencies {
         return AppDependencies(
             authManager: PreviewAuthManager(),
-            featureProvider: CachedFeatureProvider(provider: PreviewFeatureProvider())
+            featureProvider: CachedFeatureProvider(
+                provider: PreviewFeatureProvider(),
+                cacheStore: UserDefaultsFeatureCacheStore(
+                    keyPrefix: "com.xjtu.toolbox.ios.featureCache.debug.swiftPreview."
+                )
+            )
         )
     }
 
@@ -269,7 +274,7 @@ enum AppDependencyFactory {
         let persistentProvider = CachedFeatureProvider(
             provider: kmpProvider,
             cacheStore: UserDefaultsFeatureCacheStore(
-                keyPrefix: "com.xjtu.toolbox.ios.kmpFeatureCache."
+                keyPrefix: XjtuLaunchArguments.persistentFeatureCacheKeyPrefix
             ),
             shouldCache: { key in
                 key == "schedule" ||

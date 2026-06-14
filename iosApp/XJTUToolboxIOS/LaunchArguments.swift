@@ -1,6 +1,6 @@
 import Foundation
 
-enum XjtuDependencyMode {
+enum XjtuDependencyMode: Equatable {
     case preview
     case realLoginValidation
     case realEmptyRooms
@@ -21,7 +21,7 @@ enum XjtuDependencyMode {
         case .realCampusCardAndPublicData:
             return "真实一卡通验证"
         case .realFirstReleaseCore:
-            return "真实首发核心验证"
+            return "真实首发核心"
         }
     }
 
@@ -80,6 +80,36 @@ enum XjtuDependencyMode {
     var browserAuthNotice: String? {
         allowsBrowserAuthHandoff ? nil : "学校 CAS 当前不接受 App 回跳 service，网页登录需白名单或 Universal Link 后才能启用；请使用上方账号密码登录。"
     }
+
+    var cacheKeySegment: String {
+        switch self {
+        case .preview:
+            return "preview"
+        case .realLoginValidation:
+            return "realLoginValidation"
+        case .realEmptyRooms:
+            return "realEmptyRooms"
+        case .realPublicData:
+            return "realPublicData"
+        case .realCampusCardAndPublicData:
+            return "realCampusCardAndPublicData"
+        case .realFirstReleaseCore:
+            return "realFirstReleaseCore"
+        }
+    }
+}
+
+enum XjtuBuildConfiguration {
+    case debug
+    case release
+
+    static var current: XjtuBuildConfiguration {
+        #if DEBUG
+        .debug
+        #else
+        .release
+        #endif
+    }
 }
 
 enum XjtuLaunchArguments {
@@ -99,6 +129,16 @@ enum XjtuLaunchArguments {
     static let startScheduleView = "-XJTUStartScheduleView"
 
     static var dependencyMode: XjtuDependencyMode {
+        dependencyMode(arguments: arguments, buildConfiguration: .current)
+    }
+
+    static func dependencyMode(
+        arguments: Set<String>,
+        buildConfiguration: XjtuBuildConfiguration
+    ) -> XjtuDependencyMode {
+        guard buildConfiguration == .debug else {
+            return .realFirstReleaseCore
+        }
         if arguments.contains(realFirstReleaseCore) {
             return .realFirstReleaseCore
         }
@@ -150,7 +190,29 @@ enum XjtuLaunchArguments {
     }
 
     static var shouldLogAuthNetworkDebug: Bool {
-        arguments.contains(authNetworkDebug)
+        shouldLogAuthNetworkDebug(arguments: arguments, buildConfiguration: .current)
+    }
+
+    static func shouldLogAuthNetworkDebug(
+        arguments: Set<String>,
+        buildConfiguration: XjtuBuildConfiguration
+    ) -> Bool {
+        buildConfiguration == .debug && arguments.contains(authNetworkDebug)
+    }
+
+    static var persistentFeatureCacheKeyPrefix: String {
+        persistentFeatureCacheKeyPrefix(
+            dependencyMode: dependencyMode,
+            buildConfiguration: .current
+        )
+    }
+
+    static func persistentFeatureCacheKeyPrefix(
+        dependencyMode: XjtuDependencyMode,
+        buildConfiguration: XjtuBuildConfiguration
+    ) -> String {
+        let buildSegment = buildConfiguration == .debug ? "debug" : "release"
+        return "com.xjtu.toolbox.ios.featureCache.\(buildSegment).\(dependencyMode.cacheKeySegment)."
     }
 
     static var prefilledUsername: String? {

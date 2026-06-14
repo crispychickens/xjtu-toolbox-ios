@@ -58,6 +58,8 @@ schemes:
       gatherCoverageData: true
       targets:
         - XJTUToolboxIOSTests
+    archive:
+      config: Release
   XJTUToolboxIOS-PreviewAutoLogin:
     build:
       targets:

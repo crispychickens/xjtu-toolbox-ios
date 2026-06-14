@@ -27,9 +27,9 @@ Low-token current-state snapshot for future agents. This is not a changelog. Use
 - Per-site CAS/Safety Verify failures surface as `SiteVerificationRequired`, not global logout. Once inside the app shell, iOS shows inline “补授权” and retries only after user action.
 - Password, challenge, and browser-auth attempts are separately throttled. Never add automatic password/MFA/browser-auth/WebVPN retry loops.
 - Official browser auth is blocked for production use until XJTU CAS accepts an app callback/Universal Link and returns an app-readable artifact. The current `xjtutoolbox://auth` service was rejected in live validation.
-- Real school-system wiring stays behind explicit validation launch arguments. Default startup remains network-free KMP preview until release productionization is deliberately completed.
+- Debug startup remains preview-safe unless an explicit validation scheme or launch argument is used. Release startup ignores preview/validation dependency launch arguments and uses the real first-release dependency assembly; real traffic is still user/login-driven and paced.
 - iOS ATS remains strict except for the scoped `rg.lib.xjtu.edu.cn` exception required by the library seat system's direct HTTP endpoint. Do not restore global arbitrary-load permission.
-- Persistent stale cache is limited to schedule, public notices, and public empty rooms. Credentials stay in Keychain; grades, campus card, dashboard, coupons, library seats, grade details, and course searches are not persisted in UserDefaults.
+- Persistent stale cache is limited to schedule, public notices, and public empty rooms, with keys namespaced by build configuration and dependency mode. Credentials stay in Keychain; grades, campus card, dashboard, coupons, library seats, grade details, and course searches are not persisted in UserDefaults.
 - Keep grade, textbook, campus-card, notice, coupon, and school-course paging bounded and user-driven. Public notice aggregation stays sequential.
 - New cross-platform behavior goes into `shared` first. iOS presentation remains restrained, task-first, and native.
 
@@ -40,7 +40,7 @@ Low-token current-state snapshot for future agents. This is not a changelog. Use
 - Shared repositories and parsers fail closed on auth/error/service-change shapes and have fixture-driven tests.
 - iOS shell: login/challenge flows, inline site verification, homepage, schedule, grades/detail, campus card, notices, empty rooms, library seats, coupons, school-course search, profile, settings, cache clearing, Keychain, and access-mode controls.
 - First-slice library seats intentionally omit map selection, complex neighbor scoring, timed seat-grab automation, and automated sign-out.
-- Preview, login-only, public-data, campus-card/public-data, and real-first-release dependency assemblies exist. The real-first-release assembly is not the default production assembly.
+- Preview, login-only, public-data, campus-card/public-data, and real-first-release dependency assemblies exist. Debug runs default to KMP preview and can opt into validation modes; Release defaults to the real-first-release assembly.
 
 ## Completion Assessment
 
@@ -49,19 +49,20 @@ Estimates as of 2026-06-14; these are engineering judgments, not measured covera
 | Scope | Completion | Assessment |
 |---|---:|---|
 | First-release feature implementation | 90% | Every declared first-release workflow has a shared repository/service seam and iOS surface. Remaining work is mainly validation and release hardening. |
-| Shared architecture and fixture coverage | 90% | Core boundaries and fail-closed parsers are established; the first iOS cache/store XCTest baseline now exists. School endpoint churn, action workflows, and broader iOS state coverage remain residual risk. |
+| Shared architecture and fixture coverage | 90% | Core boundaries and fail-closed parsers are established; the iOS cache/store and launch/dependency-policy XCTest baseline now exists. School endpoint churn, action workflows, and broader iOS state coverage remain residual risk. |
 | Real-account integration confidence | 70% | CAS, saved restore, site verification, schedule, grades, and ncard were live-validated. Library seats, coupons, and school-course search have fixture/preview validation but no recorded end-to-end live validation. |
-| iOS product/release readiness | 45% | Simulator builds and the first XCTest suite pass, and macOS CI configuration exists. Default wiring is still preview; remote CI, signing/archive/TestFlight/privacy/assets work is not established. |
+| iOS product/release readiness | 52% | Debug and Release simulator builds pass, the XCTest suite now covers cache and launch/dependency policy, and macOS CI includes shared, iOS test, and Release build steps. Remote CI, signing/archive/TestFlight/privacy/assets work is not established. |
 | Broad Android feature parity | 40% | First-release core is present; attendance, class replay, LMS, transcript, textbook center, NeoSchool, venue booking, evaluation, payment code, downloads, widgets, and other Android-only workflows remain later releases. |
-| Overall first iOS release readiness | 74% | Feature-complete enough for a controlled alpha, not ready for unattended production release. |
+| Overall first iOS release readiness | 76% | Feature-complete enough for a controlled alpha, with Release dependency wiring now productionized. It is still not ready for unattended production release without live validation, remote CI, signing, privacy, archive, and TestFlight evidence. |
 
 ## Latest Validation Baseline
 
 - 2026-06-05: live iOS validation passed CAS login, saved credential reuse, mobile JWAPP grade token/grade-list flow, schedule, ncard token exchange/card info/turnover, and inline site reauthorization behavior. Grade detail has fixture/build/presentation validation but no recorded live end-to-end check.
 - 2026-06-14: library seats, coupons, and school-course search first slices were present; school-course search received targeted shared tests and simulator presentation validation, but not a live-account query.
 - 2026-06-14: `./gradlew check` passed in 24m04s; iOS simulator Debug build passed; `git diff --check` passed; simulator visual QA passed; CodeGraph was synchronized.
-- 2026-06-14: migration checkpoint `9aaff83` captured the reviewed first-release feature state. A generated iOS XCTest target and cache/store suite passed 4/4 locally; macOS CI configuration now runs shared checks and iOS tests, but has not yet produced a remote GitHub Actions result.
-- Test shape: shared has substantial fixture-driven common/JVM tests; Android tests are sparse; iOS has an initial cache/store XCTest suite but no UI-test suite and limited bridge/auth-state coverage.
+- 2026-06-14: migration checkpoint `9aaff83` captured the reviewed first-release feature state. At that checkpoint, a generated iOS XCTest target and cache/store suite passed 4/4 locally; macOS CI configuration was added for shared checks and iOS tests, but had not yet produced a remote GitHub Actions result.
+- 2026-06-14: Release dependency productionization landed locally. `xcodebuild test` passed 10/10, Debug and Release simulator builds passed, `./gradlew :shared:check` passed, and CI now includes a Release build step. A pre-fix Release runtime smoke found stale Debug/preview schedule cache leaking through the shared bundle `UserDefaults`; cache keys were split by build configuration and dependency mode. Post-fix clean-install runtime screenshot evidence is still pending because CoreSimulatorService became unstable during reinstall.
+- Test shape: shared has substantial fixture-driven common/JVM tests; Android tests are sparse; iOS has initial cache/store and launch/dependency-policy XCTest coverage but no UI-test suite and limited bridge/auth-state coverage.
 
 ## Remaining Milestones
 
@@ -71,8 +72,8 @@ Difficulty: `M` bounded multi-file work, `H` cross-layer or external-system work
 |---|---|---:|---|
 | R1 | Live-validate library seats, coupons, and school-course search with owner-entered credentials; cover success, empty, expired-session, site-verification, paging/action errors, and direct/WebVPN where supported. | H | xhigh |
 | R1 | Execute the documented first-release acceptance matrix across cold start, saved restore, captcha/MFA/account choice, per-site reauth, access-mode switch, offline/stale cache, retry, pagination, logout, and relaunch. | H | xhigh |
-| R1 | Expand iOS automated coverage beyond the initial cache/store suite: Swift bridge/auth-state tests and a small preview UI smoke suite; obtain a passing remote macOS CI result. | H | high |
-| R1 | Productionize the iOS assembly: make release configuration use real dependencies without debug launch arguments, keep preview schemes isolated, and verify no debug auth logging or preview data leaks into Release. | VH | xhigh |
+| R1 | Expand iOS automated coverage beyond cache and launch/dependency policy: Swift bridge/auth-state tests and a small preview UI smoke suite; obtain a passing remote macOS CI result. | H | high |
+| R1 | Clean-install Release runtime and archive inspection: prove Release starts in real-first-release mode, ignores preview args, has no debug auth logging, and cannot read Debug/preview stale cache on a stable simulator/device or TestFlight build. | H | high |
 | R1 | Establish iOS release engineering: app identity/signing, icons/assets, privacy manifest and disclosures, archive/export validation, versioning, crash/log policy, TestFlight pipeline, and release checklist. | VH | xhigh |
 | R2 | Harden endpoint-change operations: sanitized diagnostics, fixture refresh workflow, explicit service-change copy, and a controlled live-validation cadence for school-system changes. | H | high |
 | R2 | Decide first post-release slice from real demand; do not start broad parity by default. Candidate slices: attendance, schedule export/custom courses, or richer library-seat workflow. | M | high |
@@ -81,6 +82,6 @@ Difficulty: `M` bounded multi-file work, `H` cross-layer or external-system work
 ## Recommended Execution Order
 
 1. Complete R1 live validation and execute the acceptance matrix; fix only evidence-backed failures.
-2. Expand iOS tests and confirm the macOS CI workflow remotely, then productionize release wiring.
+2. Confirm the macOS CI workflow remotely and run the clean-install Release runtime/archive inspection.
 3. Complete signing, privacy, archive, and TestFlight work; ship a controlled alpha.
 4. Choose one post-release vertical slice from observed user demand.

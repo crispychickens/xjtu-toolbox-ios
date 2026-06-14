@@ -15,10 +15,10 @@ This is the release-facing evidence checklist for the SwiftUI/KMP first release.
 | Area | Scenario | Required evidence | Current status |
 |---|---|---|---|
 | Build | Full Gradle regression | `./gradlew check` | Passed 2026-06-14 |
-| Build | Generated iOS project builds | `xcodegen generate` then simulator Debug build | Passed 2026-06-14 |
-| Build | iOS unit tests | `xcodebuild test` on generated project | Local cache/store suite passed 4/4 on 2026-06-14; remote CI pending |
-| Security | Default launch is preview-safe and network-free | Preview launch plus dependency-mode check | Implemented; repeat before release |
-| Security | Release has no preview data/debug auth logging | Release archive inspection | Not started |
+| Build | Generated iOS project builds | `xcodegen generate` then simulator Debug and Release builds | Passed 2026-06-14 |
+| Build | iOS unit tests | `xcodebuild test` on generated project | Local cache/store and launch/dependency-policy suite passed 10/10 on 2026-06-14; remote CI pending |
+| Security | Debug default launch is preview-safe and network-free | Preview launch plus dependency-mode check | Implemented and covered by launch-policy XCTest; repeat before release |
+| Security | Release has no preview data/debug auth logging | Launch-policy XCTest plus clean Release runtime/archive inspection | Policy tests passed and Debug/Release builds passed 2026-06-14; post-fix clean-install runtime smoke pending |
 | Security | ATS is strict except library direct-HTTP host | Generated and built `Info.plist` inspection | Passed 2026-06-14 |
 | Auth | Fresh CAS login | Owner validation: success plus sanitized state evidence | Previously passed |
 | Auth | Saved credential restore and relaunch | Owner validation | Previously passed |
@@ -26,6 +26,7 @@ This is the release-facing evidence checklist for the SwiftUI/KMP first release.
 | Auth | Site expiry stays inside app shell | Owner validation of inline “补授权” and resumed feature load | Previously passed |
 | Auth | Access-mode switch invalidates sessions | Owner validation for supported direct/WebVPN routes | Not complete |
 | Cache | Only schedule/notices/empty rooms persist stale data | Unit tests plus UserDefaults inspection | Unit coverage added |
+| Cache | Release cannot read Debug/preview stale feature cache | Cache namespace tests plus clean Release runtime smoke | Build/mode cache-prefix tests passed 2026-06-14; post-fix runtime smoke pending |
 | Cache | Clear cache does not remove Keychain credentials | Unit/manual validation | Partial |
 | Recovery | Retry, empty, malformed, offline, and stale fallback states | Automated/preview/public evidence per feature | Partial |
 | Release | Signed archive, privacy disclosures, versioning, TestFlight | Release evidence | Not started |
