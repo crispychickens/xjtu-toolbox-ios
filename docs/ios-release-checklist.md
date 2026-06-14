@@ -41,6 +41,7 @@ The archive validator checks:
 
 - bundle identity, `major.minor.patch` marketing version, positive build number, minimum iOS version, and iPhone-only device family;
 - Release device platform and arm64 executable;
+- compiled `AppIcon` asset in `Assets.car`, generated AppIcon PNG, and processed `CFBundleIcons` metadata;
 - privacy manifest declarations and scoped ATS exception;
 - absence of the debug-auth logging marker and known unreviewed crash-reporting SDK markers;
 - matching app executable and dSYM UUIDs;
@@ -61,7 +62,7 @@ Before the first TestFlight upload:
 
 ## App Store And TestFlight Gate
 
-1. Supply final app icon and App Store listing assets.
+1. Supply App Store listing assets and replace the bundled AppIcon only if the owner provides a final brand asset.
 2. Review App Store privacy questionnaire answers against actual network, Keychain, UserDefaults, cookie, and school-account behavior.
 3. Provide privacy policy/support URLs and review notes without credentials or personal data.
 4. Upload the signed build and wait for App Store Connect processing.

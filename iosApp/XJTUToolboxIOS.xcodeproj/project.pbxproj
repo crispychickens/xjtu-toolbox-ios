@@ -30,6 +30,7 @@
 		D84A8C977E3900E0E326B4DB /* FeatureCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A66E4AD9702D1A22A56420 /* FeatureCacheStore.swift */; };
 		EBA8824D2712AFA6AB255EFD /* PreviewSmokeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A3DBD31239F05414A4BCF8B /* PreviewSmokeUITests.swift */; };
 		ED0EB4FB4182CEAE35E820E4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D64D7AC29C1FD92C09E9A64D /* PrivacyInfo.xcprivacy */; };
+		EE193C8CF81F6A172E2AB5EF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A73DBA0360FBEC851A8BC91C /* Assets.xcassets */; };
 		F746E79F02B6CB1224E5C1CA /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63AD938F739DB7F22302947 /* Router.swift */; };
 /* End PBXBuildFile section */
 
@@ -70,6 +71,7 @@
 		997ED01D6FE992DCA6057CDB /* XJTUToolboxIOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = XJTUToolboxIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A02D13A53DCD13ECCF373439 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
 		A4CD66D62782BAEB3C88E108 /* SharedBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedBridge.swift; sourceTree = "<group>"; };
+		A73DBA0360FBEC851A8BC91C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B92FEEBC093FB6A547424FCD /* ReleaseLogPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseLogPolicyTests.swift; sourceTree = "<group>"; };
 		C26834A78933293B7DB2F0F3 /* KmpPlatformAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpPlatformAdapters.swift; sourceTree = "<group>"; };
 		D07C264B009C6E4C68E653DD /* KmpBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KmpBridge.swift; sourceTree = "<group>"; };
@@ -127,6 +129,7 @@
 			children = (
 				558FB1C2ACE9A3E4D637FDD7 /* AccessModeStore.swift */,
 				A02D13A53DCD13ECCF373439 /* AppDependencies.swift */,
+				A73DBA0360FBEC851A8BC91C /* Assets.xcassets */,
 				85B3ACEB9C88F39C6780A839 /* AuthStore.swift */,
 				596445D6F764C720DA70C285 /* DashboardView.swift */,
 				E776F65AFB1C915AE1170B07 /* FeatureBridge.swift */,
@@ -246,6 +249,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EE193C8CF81F6A172E2AB5EF /* Assets.xcassets in Resources */,
 				ED0EB4FB4182CEAE35E820E4 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
