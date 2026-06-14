@@ -35,6 +35,20 @@
                ReferencedContainer = "container:XJTUToolboxIOS.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "4F03A64C64ADC7E4360B1283"
+               BuildableName = "XJTUToolboxIOSUITests.xctest"
+               BlueprintName = "XJTUToolboxIOSUITests"
+               ReferencedContainer = "container:XJTUToolboxIOS.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -62,6 +76,17 @@
                BlueprintIdentifier = "714AA2BB170891E02B53113D"
                BuildableName = "XJTUToolboxIOSTests.xctest"
                BlueprintName = "XJTUToolboxIOSTests"
+               ReferencedContainer = "container:XJTUToolboxIOS.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "4F03A64C64ADC7E4360B1283"
+               BuildableName = "XJTUToolboxIOSUITests.xctest"
+               BlueprintName = "XJTUToolboxIOSUITests"
                ReferencedContainer = "container:XJTUToolboxIOS.xcodeproj">
             </BuildableReference>
          </TestableReference>
