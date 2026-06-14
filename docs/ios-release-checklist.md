@@ -37,6 +37,8 @@ xcodebuild archive \
 iosApp/scripts/validate-release-archive.sh /tmp/XJTUToolboxIOS.xcarchive
 ```
 
+The remote equivalent is `.github/workflows/ios-validation.yml`. It runs on pull requests, pushes to `main`/`ios-kmp-migration`, and manual `workflow_dispatch`; logs Java/Xcode/simulator/XcodeGen versions; prefers an available `iPhone 16` simulator when present; uploads the `.xcresult` bundle as `ios-xcresult` on XCTest failure; and then runs the same unsigned archive validator.
+
 The archive validator checks:
 
 - bundle identity, `major.minor.patch` marketing version, positive build number, minimum iOS version, and iPhone-only device family;
