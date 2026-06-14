@@ -48,6 +48,7 @@ The archive validator checks:
 - signing identity/team and `codesign` verification when invoked with `REQUIRE_SIGNED=1`.
 
 Use `docs/ios-crash-log-policy.md` for allowed Debug diagnostic metadata, Release restrictions, symbolication, and incident handling.
+Use `docs/ios-app-store-privacy-review.md` for the local App Store privacy-questionnaire evidence and `docs/ios-privacy-policy-draft.md` as the source for the public privacy policy page.
 
 ## Signed Archive Gate
 
@@ -63,8 +64,8 @@ Before the first TestFlight upload:
 ## App Store And TestFlight Gate
 
 1. Supply App Store listing assets and replace the bundled AppIcon only if the owner provides a final brand asset.
-2. Review App Store privacy questionnaire answers against actual network, Keychain, UserDefaults, cookie, and school-account behavior.
-3. Provide privacy policy/support URLs and review notes without credentials or personal data.
+2. Complete App Store privacy questionnaire answers from `docs/ios-app-store-privacy-review.md`, then have the release owner confirm whether XJTU school-system traffic is treated as real-time user-request servicing or third-party partner collection.
+3. Publish the privacy policy/support URLs from `docs/ios-privacy-policy-draft.md` and provide review notes without credentials or personal data.
 4. Upload the signed build and wait for App Store Connect processing.
 5. Install from TestFlight on a real device and execute `docs/ios-first-release-acceptance.md`.
 6. Verify upgrade behavior from the previous TestFlight build, including no Debug/preview stale-cache read.
