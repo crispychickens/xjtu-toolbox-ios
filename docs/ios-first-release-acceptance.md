@@ -18,7 +18,7 @@ This is the release-facing evidence checklist for the SwiftUI/KMP first release.
 | Build | Generated iOS project builds | `xcodegen generate` then simulator Debug and Release builds | Passed 2026-06-14 |
 | Build | iOS unit tests | `xcodebuild test` on generated project | Local cache/store and launch/dependency-policy suite passed 10/10 on 2026-06-14; remote CI pending |
 | Security | Debug default launch is preview-safe and network-free | Preview launch plus dependency-mode check | Implemented and covered by launch-policy XCTest; repeat before release |
-| Security | Release has no preview data/debug auth logging | Launch-policy XCTest plus clean Release runtime/archive inspection | Policy tests passed and Debug/Release builds passed 2026-06-14; post-fix clean-install runtime smoke pending |
+| Security | Release has no preview data/debug auth logging | Launch-policy XCTest plus clean Release runtime/archive inspection | Policy tests passed and Debug/Release builds passed 2026-06-14. Post-fix simulator Release smoke stayed on real CAS login despite preview/public/debug launch args, and no `[DEBUG-AUTH-2FA]` log appeared. Signed archive/TestFlight inspection pending |
 | Security | ATS is strict except library direct-HTTP host | Generated and built `Info.plist` inspection | Passed 2026-06-14 |
 | Auth | Fresh CAS login | Owner validation: success plus sanitized state evidence | Previously passed |
 | Auth | Saved credential restore and relaunch | Owner validation | Previously passed |
@@ -26,10 +26,10 @@ This is the release-facing evidence checklist for the SwiftUI/KMP first release.
 | Auth | Site expiry stays inside app shell | Owner validation of inline “补授权” and resumed feature load | Previously passed |
 | Auth | Access-mode switch invalidates sessions | Owner validation for supported direct/WebVPN routes | Not complete |
 | Cache | Only schedule/notices/empty rooms persist stale data | Unit tests plus UserDefaults inspection | Unit coverage added |
-| Cache | Release cannot read Debug/preview stale feature cache | Cache namespace tests plus clean Release runtime smoke | Build/mode cache-prefix tests passed 2026-06-14; post-fix runtime smoke pending |
+| Cache | Release cannot read Debug/preview stale feature cache | Cache namespace tests plus clean Release runtime smoke | Build/mode cache-prefix tests passed 2026-06-14. Clean Release `UserDefaults` was empty; Debug preview schedule smoke followed by Release overlay launch returned to real CAS login instead of preview shell. Preserved-container stale-cache proof on signed/device or TestFlight pending |
 | Cache | Clear cache does not remove Keychain credentials | Unit/manual validation | Partial |
 | Recovery | Retry, empty, malformed, offline, and stale fallback states | Automated/preview/public evidence per feature | Partial |
-| Release | Signed archive, privacy disclosures, versioning, TestFlight | Release evidence | Not started |
+| Release | Signed archive, privacy disclosures, versioning, TestFlight | Release evidence | Simulator Release smoke passed; signed archive/TestFlight not started |
 
 ## Feature Matrix
 
