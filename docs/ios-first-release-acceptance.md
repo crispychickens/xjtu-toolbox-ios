@@ -1,6 +1,6 @@
 # iOS First-Release Acceptance Matrix
 
-This is the release-facing evidence checklist for the SwiftUI/KMP first release. Fixture tests and preview screenshots are necessary but do not prove a real school-system workflow. Record evidence without credentials, verification codes, tickets, tokens, cookies, or personal data.
+This is the release-facing evidence checklist for the SwiftUI/KMP first release. Fixture tests and preview screenshots are necessary but do not prove a real school-system workflow. Record evidence without credentials, verification codes, tickets, tokens, cookies, or personal data. Use `docs/ios-release-owner-evidence-record.md` as the release-owner template for private owner-account, signing, TestFlight, Pages, and App Store Connect evidence.
 
 ## Evidence Levels
 
