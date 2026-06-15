@@ -52,6 +52,7 @@ Estimates as of 2026-06-15 local; they are engineering judgments, not measured c
 - Unsigned generic-device Release archive `1.0.0 (1)` passes local validation for identity, iPhone-only arm64, compiled AppIcon, privacy/ATS, dSYM, absence of the Debug-auth marker, and absence of known unreviewed crash-SDK markers.
 - `iosApp/scripts/run-signed-release-gate.sh` now provides a command-time team injection, automatic signed Release archive, strict `REQUIRE_SIGNED=1` validation, and optional IPA export. A 2026-06-15 local attempt found one valid Apple Development identity but correctly stopped because Xcode has no valid account session for that team and no provisioning profile for `com.xjtu.toolbox.ios`.
 - `docs/ios-release-owner-evidence-record.md` is the release-owner template for closing private R1 evidence: owner-account feature validation, remote iOS/Pages workflow URLs, public privacy/support URLs, signed archive/export, TestFlight device inspection, App Store Connect privacy/listing decisions, and failure records without secrets or personal data.
+- `docs/school-endpoint-change-playbook.md` defines the R2 endpoint-change workflow: stop live retrying on unexpected school-system shapes, collect sanitized structural evidence, refresh minimal fixtures before parser/repository changes, keep service-change copy explicit, and use controlled live-validation cadence.
 ## Remaining Milestones
 Difficulty: `M` bounded multi-file work, `H` cross-layer or external-system work, `VH` release/architecture work with broad blast radius. Recommended Codex reasoning: `medium`, `high`, `xhigh`.
 | Priority | Remaining node / done condition | Difficulty | Codex reasoning |
@@ -63,7 +64,7 @@ Difficulty: `M` bounded multi-file work, `H` cross-layer or external-system work
 | R1 | Finalize app identity, team/provisioning/signing, signed archive/export validation, and TestFlight upload/install pipeline. | VH | xhigh |
 | R1 | Finalize App Store listing visuals and App Store Connect visual verification from the local listing draft. AppIcon is generated from the Android launcher asset and passes archive validation; replace only if the owner provides a final brand asset. | M | medium |
 | R1 | Deploy the prepared privacy policy/support pages, record final public URLs, and complete App Store Connect privacy questionnaire using local privacy-review evidence; release owner must classify XJTU school-system traffic for App Store privacy. | M | high |
-| R2 | Harden endpoint-change operations: sanitized diagnostics, fixture refresh workflow, explicit service-change copy, and controlled live-validation cadence for school-system changes. | H | high |
+| R2 | Exercise the endpoint-change playbook on the next real school-system shape change; add fixture-refresh helpers or deeper diagnostics only if the manual sanitized workflow proves insufficient. | H | high |
 | R2 | Choose the first post-release slice from real demand; do not start broad parity by default. Candidate slices: attendance, schedule export/custom courses, or richer library-seat workflow. | M | high |
 | Later | Port Android-only modules as independent vertical slices: attendance, class replay/downloads, LMS, transcript, textbook center, NeoSchool, venue booking, evaluation, payment code, and widgets. | VH each | xhigh |
 ## Recommended Next Order

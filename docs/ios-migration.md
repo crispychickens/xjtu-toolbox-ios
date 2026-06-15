@@ -104,6 +104,7 @@ Build the first iOS release around the highest-use and highest-risk workflows:
 - Login cooldown state has a pluggable store so iOS can persist retry windows across app restarts instead of resetting protection when the process is killed.
 - Release signing previously had a hardcoded local keystore password fallback; signing must now come from environment secrets or local untracked config.
 - Tests were too sparse for school endpoint churn. The `shared` module now starts fixture-driven tests for auth, real WebVPN URL conversion, and core feature parsing.
+- Endpoint-change response work should follow `docs/school-endpoint-change-playbook.md`: stop live retrying on unexpected school-system shapes, capture only sanitized evidence, refresh minimal fixtures first, keep pagination/action bounds explicit, and use owner-driven live validation only after fixture-backed changes.
 - Real school-system HTTP now has a shared request-pacing wrapper that serializes session-backend requests through a minimum interval. Keep this enabled for CAS/JWAPP/ncard/WebVPN opt-in assemblies before live account testing.
 - Public notice aggregation is intentionally sequential and capped per source. It should not be changed to eager parallel fetching unless the UI adds explicit user controls and caching protections for public-site rate pressure.
 - Campus-card history should stay page-limited and user-driven on iOS. `NcardCampusCardRepository` already follows this rule; do not port Android's eager multi-page parallel fetch into the first iOS repository.
