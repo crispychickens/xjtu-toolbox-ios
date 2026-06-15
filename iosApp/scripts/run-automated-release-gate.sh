@@ -70,6 +70,7 @@ print("runtime={}".format(runtime))
 }
 
 require_command java
+require_command bash
 require_command xcodebuild
 require_command xcodegen
 require_command xcrun
@@ -87,6 +88,11 @@ java -version
 "$repo_root/gradlew" --version
 xcodegen --version
 xcrun simctl list runtimes available
+
+log "Validate iOS shell scripts"
+for shell_script in "$ios_root"/scripts/*.sh; do
+  bash -n "$shell_script"
+done
 
 log "Run shared checks"
 (cd "$repo_root" && ./gradlew :shared:check)

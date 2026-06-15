@@ -152,6 +152,93 @@ final class AuthStoreTests: XCTestCase {
         XCTAssertTrue(authManager.loginRequests.isEmpty)
         XCTAssertFalse(subject.hasAuthenticatedSessionContext)
     }
+
+    func testSetAccessModeForwardsChangesAndSkipsDuplicates() async {
+        let authManager = AuthManagerSpy()
+        let subject = AuthStore(authManager: authManager)
+        await subject.refresh()
+
+        await subject.setAccessMode(.normal)
+        await subject.setAccessMode(.normal)
+        await subject.setAccessMode(.webvpn)
+
+        XCTAssertEqual(subject.accessMode, .webvpn)
+        XCTAssertEqual(authManager.currentAccessMode, .webvpn)
+        XCTAssertEqual(authManager.accessModeRequests, [.normal, .webvpn])
+    }
+
+    func testAutoSiteVerificationRequiresAuthenticatedShellContext() async {
+        let authManager = AuthManagerSpy()
+        authManager.currentState = .siteVerificationRequired(
+            username: "3124000000",
+            siteName: "schedule",
+            message: "需要补授权"
+        )
+        let subject = AuthStore(
+            authManager: authManager,
+            allowsAutomaticSiteVerification: { true }
+        )
+
+        _ = await subject.syncStateFromManager()
+        await subject.autoBeginSiteVerificationIfAllowed()
+
+        XCTAssertTrue(authManager.siteVerificationRequests.isEmpty)
+    }
+
+    func testAutoSiteVerificationRequiresExplicitOptIn() async {
+        let authManager = AuthManagerSpy()
+        authManager.currentState = .siteVerificationRequired(
+            username: "3124000000",
+            siteName: "schedule",
+            message: "需要补授权"
+        )
+        UserDefaults.standard.set(true, forKey: sessionContextKey)
+        let subject = AuthStore(
+            authManager: authManager,
+            allowsAutomaticSiteVerification: { false }
+        )
+
+        _ = await subject.syncStateFromManager()
+        await subject.autoBeginSiteVerificationIfAllowed()
+
+        XCTAssertTrue(authManager.siteVerificationRequests.isEmpty)
+    }
+
+    func testAutoSiteVerificationIsRateLimitedAndWindowCapped() async {
+        var now = Date(timeIntervalSince1970: 0)
+        let limiter = SiteVerificationAutoLimiter(
+            minimumInterval: 1,
+            window: 5 * 60,
+            maximumAttemptsPerWindow: 2,
+            userDefaults: nil,
+            now: { now }
+        )
+        let authManager = AuthManagerSpy()
+        authManager.currentState = .siteVerificationRequired(
+            username: "3124000000",
+            siteName: "schedule",
+            message: "需要补授权"
+        )
+        authManager.siteVerificationResult = .failure(message: "临时失败")
+        UserDefaults.standard.set(true, forKey: sessionContextKey)
+        let subject = AuthStore(
+            authManager: authManager,
+            autoSiteVerificationLimiter: limiter,
+            allowsAutomaticSiteVerification: { true }
+        )
+
+        _ = await subject.syncStateFromManager()
+        await subject.autoBeginSiteVerificationIfAllowed()
+        await subject.autoBeginSiteVerificationIfAllowed()
+        now = now.addingTimeInterval(1.1)
+        await subject.autoBeginSiteVerificationIfAllowed()
+        now = now.addingTimeInterval(1.1)
+        await subject.autoBeginSiteVerificationIfAllowed()
+        now = now.addingTimeInterval(5 * 60)
+        await subject.autoBeginSiteVerificationIfAllowed()
+
+        XCTAssertEqual(authManager.siteVerificationRequests, ["schedule", "schedule", "schedule"])
+    }
 }
 
 private final class AuthManagerSpy: SharedAuthManaging {
@@ -163,7 +250,9 @@ private final class AuthManagerSpy: SharedAuthManaging {
     var currentState: SharedAuthState = .anonymous
     var currentAccessMode: SharedAccessMode = .automatic
     var loginResult: SharedLoginResult?
+    var siteVerificationResult: SharedLoginResult?
     private(set) var loginRequests: [LoginRequest] = []
+    private(set) var siteVerificationRequests: [String] = []
     private(set) var logoutRequests = 0
     private(set) var accessModeRequests: [SharedAccessMode] = []
 
@@ -203,6 +292,24 @@ private final class AuthManagerSpy: SharedAuthManaging {
     }
 
     func beginSiteVerification(site: String) async -> SharedLoginResult {
+        siteVerificationRequests.append(site)
+        if let siteVerificationResult {
+            switch siteVerificationResult {
+            case .success(let username):
+                currentState = .authenticated(username: username)
+            case .needCaptcha(let challenge):
+                currentState = .awaitingCaptcha(challenge)
+            case .needMfa(let maskedPhone):
+                currentState = .awaitingMfa(maskedPhone: maskedPhone)
+            case .needAccountChoice(let challenge):
+                currentState = .awaitingAccountChoice(challenge)
+            case .needBrowserAuth(let request):
+                currentState = .awaitingBrowserAuth(request)
+            case .failure:
+                break
+            }
+            return siteVerificationResult
+        }
         currentState = .awaitingMfa(maskedPhone: "188****0000")
         return .needMfa(maskedPhone: "188****0000")
     }

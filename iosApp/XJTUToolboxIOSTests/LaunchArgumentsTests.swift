@@ -69,6 +69,40 @@ final class LaunchArgumentsTests: XCTestCase {
         )
     }
 
+    func testAutoSiteVerificationIsDebugOnly() {
+        let arguments: Set<String> = [XjtuLaunchArguments.autoSiteVerification]
+
+        XCTAssertTrue(
+            XjtuLaunchArguments.shouldAutoBeginSiteVerification(
+                arguments: arguments,
+                buildConfiguration: .debug
+            )
+        )
+        XCTAssertFalse(
+            XjtuLaunchArguments.shouldAutoBeginSiteVerification(
+                arguments: arguments,
+                buildConfiguration: .release
+            )
+        )
+    }
+
+    func testRealFeatureValidationIsDebugOnly() {
+        let arguments: Set<String> = [XjtuLaunchArguments.realFeatureValidation]
+
+        XCTAssertTrue(
+            XjtuLaunchArguments.shouldRunRealFeatureValidation(
+                arguments: arguments,
+                buildConfiguration: .debug
+            )
+        )
+        XCTAssertFalse(
+            XjtuLaunchArguments.shouldRunRealFeatureValidation(
+                arguments: arguments,
+                buildConfiguration: .release
+            )
+        )
+    }
+
     func testPersistentFeatureCachePrefixSeparatesDebugAndRelease() {
         let debugPreview = XjtuLaunchArguments.persistentFeatureCacheKeyPrefix(
             dependencyMode: .preview,

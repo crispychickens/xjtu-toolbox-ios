@@ -123,6 +123,7 @@ enum XjtuLaunchArguments {
     static let autoSiteVerification = "-XJTUAutoSiteVerification"
     static let requireFreshLogin = "-XJTURequireFreshLogin"
     static let authNetworkDebug = "-XJTUAuthNetworkDebug"
+    static let realFeatureValidation = "-XJTURealFeatureValidation"
     static let initialUsername = "-XJTUInitialUsername"
     static let startTab = "-XJTUStartTab"
     static let startTool = "-XJTUStartTool"
@@ -182,7 +183,14 @@ enum XjtuLaunchArguments {
     }
 
     static var shouldAutoBeginSiteVerification: Bool {
-        arguments.contains(autoSiteVerification)
+        shouldAutoBeginSiteVerification(arguments: arguments, buildConfiguration: .current)
+    }
+
+    static func shouldAutoBeginSiteVerification(
+        arguments: Set<String>,
+        buildConfiguration: XjtuBuildConfiguration
+    ) -> Bool {
+        buildConfiguration == .debug && arguments.contains(autoSiteVerification)
     }
 
     static var shouldRequireFreshLogin: Bool {
@@ -198,6 +206,17 @@ enum XjtuLaunchArguments {
         buildConfiguration: XjtuBuildConfiguration
     ) -> Bool {
         buildConfiguration == .debug && arguments.contains(authNetworkDebug)
+    }
+
+    static var shouldRunRealFeatureValidation: Bool {
+        shouldRunRealFeatureValidation(arguments: arguments, buildConfiguration: .current)
+    }
+
+    static func shouldRunRealFeatureValidation(
+        arguments: Set<String>,
+        buildConfiguration: XjtuBuildConfiguration
+    ) -> Bool {
+        buildConfiguration == .debug && arguments.contains(realFeatureValidation)
     }
 
     static var persistentFeatureCacheKeyPrefix: String {

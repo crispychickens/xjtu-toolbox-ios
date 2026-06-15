@@ -8,8 +8,10 @@ struct RootView: View {
     @EnvironmentObject private var featureStore: FeatureStore
     @EnvironmentObject private var router: Router
     @State private var didApplyLaunchArguments = false
-    @State private var autoBeganSiteVerificationSites: Set<String> = []
     @State private var pendingSiteVerificationSiteName: String?
+    #if DEBUG
+    @State private var didRunRealFeatureValidation = false
+    #endif
 
     var body: some View {
         Group {
@@ -47,19 +49,24 @@ struct RootView: View {
                             siteName: siteName,
                             selectedTab: router.selectedTab
                         )
+                        #if DEBUG
+                        await RealFeatureValidationRunner.resumeIfPendingAfterSiteVerification(
+                            siteName: siteName,
+                            authStore: authStore,
+                            featureStore: featureStore
+                        )
+                        #endif
                     }
                 } else {
                     featureStore.prepareForAuthenticatedSession()
+                    #if DEBUG
+                    Task { await runRealFeatureValidationIfReady() }
+                    #endif
                 }
             }
-            if case .siteVerificationRequired(_, let siteName, _) = newState,
-               XjtuLaunchArguments.shouldAutoBeginSiteVerification,
-               !autoBeganSiteVerificationSites.contains(siteName) {
+            if case .siteVerificationRequired(_, let siteName, _) = newState {
                 pendingSiteVerificationSiteName = siteName
-                autoBeganSiteVerificationSites.insert(siteName)
-                Task { await authStore.beginSiteVerification() }
-            } else if case .siteVerificationRequired(_, let siteName, _) = newState {
-                pendingSiteVerificationSiteName = siteName
+                Task { await authStore.autoBeginSiteVerificationIfAllowed() }
             }
         }
         .task {
@@ -69,8 +76,23 @@ struct RootView: View {
             await authStore.previewAccountChoiceIfAllowed()
             await authStore.previewAutoLoginIfAllowed()
             await authStore.autoBeginSiteVerificationIfAllowed()
+            #if DEBUG
+            await runRealFeatureValidationIfReady()
+            #endif
         }
     }
+
+    #if DEBUG
+    private func runRealFeatureValidationIfReady() async {
+        guard !didRunRealFeatureValidation else { return }
+        guard case .authenticated = authStore.state else { return }
+        didRunRealFeatureValidation = true
+        await RealFeatureValidationRunner.runIfRequested(
+            authStore: authStore,
+            featureStore: featureStore
+        )
+    }
+    #endif
 }
 
 private extension String {

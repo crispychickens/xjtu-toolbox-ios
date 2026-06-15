@@ -19,10 +19,20 @@ final class AuthStore: ObservableObject {
     @Published private(set) var hasAuthenticatedSessionContext = false
 
     private let authManager: SharedAuthManaging
+    private let autoSiteVerificationLimiter: SiteVerificationAutoLimiter
+    private let allowsAutomaticSiteVerification: () -> Bool
     private var didApplyFreshLoginRequirement = false
 
-    init(authManager: SharedAuthManaging) {
+    init(
+        authManager: SharedAuthManaging,
+        autoSiteVerificationLimiter: SiteVerificationAutoLimiter = SiteVerificationAutoLimiter(),
+        allowsAutomaticSiteVerification: @escaping () -> Bool = {
+            XjtuLaunchArguments.shouldAutoBeginSiteVerification
+        }
+    ) {
         self.authManager = authManager
+        self.autoSiteVerificationLimiter = autoSiteVerificationLimiter
+        self.allowsAutomaticSiteVerification = allowsAutomaticSiteVerification
         hasAuthenticatedSessionContext = UserDefaults.standard.bool(
             forKey: PersistedKeys.hasAuthenticatedSessionContext
         )
@@ -95,6 +105,7 @@ final class AuthStore: ObservableObject {
             errorMessage = "请输入学号"
             return
         }
+        autoSiteVerificationLimiter.reset()
         clearAuthenticatedSessionContext()
         isBusy = true
         errorMessage = nil
@@ -124,9 +135,40 @@ final class AuthStore: ObservableObject {
     }
 
     func autoBeginSiteVerificationIfAllowed() async {
-        guard XjtuLaunchArguments.shouldAutoBeginSiteVerification else { return }
-        guard case .siteVerificationRequired = state else { return }
+        guard allowsAutomaticSiteVerification() else { return }
+        guard !isBusy else { return }
+        guard shouldShowInlineSiteVerification,
+              case .siteVerificationRequired(_, let siteName, _) = state else {
+            return
+        }
+        guard autoSiteVerificationLimiter.recordAttemptIfAllowed(siteName: siteName) == .allowed else {
+            #if DEBUG
+            RealFeatureValidationRunner.recordAutoSiteVerification(
+                siteName: siteName,
+                phase: "rateLimited",
+                state: state,
+                errorPresent: errorMessage != nil
+            )
+            #endif
+            return
+        }
+        #if DEBUG
+        RealFeatureValidationRunner.recordAutoSiteVerification(
+            siteName: siteName,
+            phase: "allowed",
+            state: state,
+            errorPresent: errorMessage != nil
+        )
+        #endif
         await beginSiteVerification()
+        #if DEBUG
+        RealFeatureValidationRunner.recordAutoSiteVerification(
+            siteName: siteName,
+            phase: "finished",
+            state: state,
+            errorPresent: errorMessage != nil
+        )
+        #endif
     }
 
     func submitCaptcha() async {
@@ -167,6 +209,7 @@ final class AuthStore: ObservableObject {
 
     func logout() async {
         await authManager.logout()
+        autoSiteVerificationLimiter.reset()
         username = ""
         password = ""
         captchaCode = ""
@@ -278,5 +321,85 @@ final class AuthStore: ObservableObject {
             return "补授权暂未完成。请稍后重试；如果仍失败，请重新输入统一身份认证密码登录。"
         }
         return message
+    }
+}
+
+final class SiteVerificationAutoLimiter {
+    enum Decision: Equatable {
+        case allowed
+        case rejected
+    }
+
+    private let minimumInterval: TimeInterval
+    private let window: TimeInterval
+    private let maximumAttemptsPerWindow: Int
+    private let now: () -> Date
+    private let userDefaults: UserDefaults?
+    private let storageKey: String
+    private var attemptsBySite: [String: [Date]]
+
+    init(
+        minimumInterval: TimeInterval = 1,
+        window: TimeInterval = 5 * 60,
+        maximumAttemptsPerWindow: Int = 1,
+        userDefaults: UserDefaults? = .standard,
+        storageKey: String = "auth.autoSiteVerificationAttemptTimes",
+        now: @escaping () -> Date = Date.init
+    ) {
+        self.minimumInterval = max(0, minimumInterval)
+        self.window = max(1, window)
+        self.maximumAttemptsPerWindow = max(1, maximumAttemptsPerWindow)
+        self.userDefaults = userDefaults
+        self.storageKey = storageKey
+        self.now = now
+        attemptsBySite = (userDefaults?.dictionary(forKey: storageKey) ?? [:]).reduce(into: [:]) {
+            result, entry in
+            guard let timestamps = entry.value as? [TimeInterval] else { return }
+            result[entry.key] = timestamps.map { Date(timeIntervalSince1970: $0) }
+        }
+    }
+
+    func recordAttemptIfAllowed(siteName: String) -> Decision {
+        let current = now()
+        pruneAttempts(before: current)
+
+        if let latest = attemptsBySite.values.flatMap({ $0 }).max(),
+           current.timeIntervalSince(latest) < minimumInterval {
+            return .rejected
+        }
+
+        var siteAttempts = attemptsBySite[siteName] ?? []
+        guard siteAttempts.count < maximumAttemptsPerWindow else {
+            return .rejected
+        }
+
+        siteAttempts.append(current)
+        attemptsBySite[siteName] = siteAttempts
+        persistAttempts()
+        return .allowed
+    }
+
+    func reset() {
+        attemptsBySite = [:]
+        userDefaults?.removeObject(forKey: storageKey)
+    }
+
+    private func pruneAttempts(before date: Date) {
+        let pruned = attemptsBySite.reduce(into: [String: [Date]]()) { result, entry in
+            let attempts = entry.value.filter { date.timeIntervalSince($0) < window }
+            if !attempts.isEmpty {
+                result[entry.key] = attempts
+            }
+        }
+        guard pruned != attemptsBySite else { return }
+        attemptsBySite = pruned
+        persistAttempts()
+    }
+
+    private func persistAttempts() {
+        userDefaults?.set(
+            attemptsBySite.mapValues { $0.map(\.timeIntervalSince1970) },
+            forKey: storageKey
+        )
     }
 }
