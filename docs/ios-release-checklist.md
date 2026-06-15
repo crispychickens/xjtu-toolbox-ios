@@ -66,6 +66,7 @@ Use `docs/ios-crash-log-policy.md` for allowed Debug diagnostic metadata, Releas
 Use `docs/ios-app-store-privacy-review.md` for the local App Store privacy-questionnaire evidence. The publishable website pages live in `website/privacy.md` and `website/support.md`; `docs/ios-privacy-policy-draft.md` keeps the review copy for the privacy-policy text.
 Use `docs/ios-app-store-listing-draft.md` as the local starting point for App Store listing copy, screenshot selection, and review notes.
 The `.github/workflows/website-pages.yml` workflow validates the VitePress website on relevant pull requests and `ios-kmp-migration` pushes. It deploys only from `main`; after the first successful `main` deployment, verify the expected public privacy/support URLs before entering them in App Store Connect.
+Use `iosApp/scripts/capture-app-store-screenshots.sh` to create a Simplified-Chinese, preview-only 6.9-inch iPhone screenshot candidate set in a disposable simulator. The script validates accepted portrait dimensions and avoids existing simulator containers/credentials. The 2026-06-15 candidate set passed local dimension and visual review; the release owner must still repeat the review and capture if the final signed/TestFlight UI differs.
 
 ## Local Live-Account Diagnostic Gate
 

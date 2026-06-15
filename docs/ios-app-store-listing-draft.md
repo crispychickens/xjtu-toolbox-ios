@@ -51,6 +51,14 @@ Before upload, verify each screenshot against:
 - no browser-auth promotion while official browser auth remains blocked;
 - visual consistency with the signed Release or TestFlight build.
 
+Generate the privacy-safe candidate set with:
+
+```bash
+iosApp/scripts/capture-app-store-screenshots.sh
+```
+
+The script creates a disposable `iPhone 16 Pro Max` simulator, requests a Simplified-Chinese app launch language/locale, installs only Debug preview dependencies, captures ten candidate screens, and validates every PNG against Apple's accepted 6.9-inch portrait dimensions. Output stays under ignored `build/app-store-screenshots/` by default. The 2026-06-15 local candidate set passed a manual review for loading states, clipping, real-account data, and Chinese system-control presentation at `1320x2868`; repeat the review and capture against the final signed/TestFlight UI if presentation changes.
+
 ## Privacy And Support URLs
 
 Local source pages are prepared and browser-verified:

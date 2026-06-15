@@ -1803,6 +1803,7 @@ private struct EmptyRoomSection: View {
             }
 
             DatePicker("日期", selection: dateBinding, displayedComponents: .date)
+                .environment(\.locale, Locale(identifier: "zh_CN"))
 
             Picker("开始节次", selection: startSectionBinding) {
                 ForEach(1...11, id: \.self) { section in
