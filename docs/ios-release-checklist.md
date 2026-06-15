@@ -78,9 +78,9 @@ Before the first TestFlight upload:
 
 1. Confirm the final App Store bundle identifier and assign the Apple Developer team in a release-owner-only configuration.
 2. Confirm the distribution certificate and App Store provisioning profile are valid.
-3. Archive the main `XJTUToolboxIOS` scheme with Release configuration and no Debug validation arguments.
-4. Run `REQUIRE_SIGNED=1 iosApp/scripts/validate-release-archive.sh <archive-path>`.
-5. Export through Xcode Organizer or an approved export configuration and record sanitized evidence.
+3. Sign into the release team in Xcode, then run `IOS_DEVELOPMENT_TEAM=<team-id> iosApp/scripts/run-signed-release-gate.sh`. The script injects the team only for the command, archives the main `XJTUToolboxIOS` Release scheme with automatic signing, and runs `REQUIRE_SIGNED=1` archive validation.
+4. To export in the same gate, also set `IOS_EXPORT_OPTIONS_PLIST=/absolute/path/ExportOptions.plist`; use only a release-owner-approved export configuration.
+5. Record sanitized archive/export evidence without certificates, profiles, account details, or credentials.
 6. Confirm App Store Connect accepts the bundle identifier, version, build number, privacy manifest, and export.
 
 ## App Store And TestFlight Gate
