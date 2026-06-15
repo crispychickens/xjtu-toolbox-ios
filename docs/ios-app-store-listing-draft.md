@@ -35,14 +35,14 @@ Screenshots must use preview data or fully redacted test data. Do not use a real
 
 Recommended first-release screenshots:
 
-- Login screen with no credentials entered.
 - Home/dashboard after preview auto-login.
 - Schedule week view with preview courses.
-- Grades list/detail with preview data only.
+- Exam schedule with preview data.
+- Textbook information with preview data.
+- Grades list with preview data only.
 - Campus card screen with preview balance/turnover or redacted values.
-- Empty-room filters/results using public or preview-safe data.
-- Library seats and coupons screens with preview or redacted values.
-- Settings/profile screen showing access mode, cache controls, version, and privacy-safe copy.
+- Library seats, coupons, and empty-room screens with preview-safe data.
+- School-course search with preview-safe data.
 
 Before upload, verify each screenshot against:
 

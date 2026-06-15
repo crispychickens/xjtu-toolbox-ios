@@ -132,26 +132,26 @@ log "Build and install Debug preview app"
 xcrun simctl install "$simulator_id" "$app_path"
 
 log "Capture preview-only App Store screenshots"
-capture "01-login.png" \
-  -XJTURequireFreshLogin
-capture "02-home.png" \
+capture "01-home.png" \
   -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab home
-capture "03-schedule-courses.png" \
+capture "02-schedule-courses.png" \
   -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab schedule -XJTUStartScheduleView courses
-capture "04-schedule-exams.png" \
+capture "03-schedule-exams.png" \
   -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab schedule -XJTUStartScheduleView exams
-capture "05-schedule-textbooks.png" \
-  -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab schedule -XJTUStartScheduleView textbooks
-capture "06-grades.png" \
+capture "04-grades.png" \
   -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab tools -XJTUStartTool grades
-capture "07-campus-card.png" \
+capture "05-campus-card.png" \
   -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab tools -XJTUStartTool campusCard
-capture "08-library-seats.png" \
+capture "06-library-seats.png" \
   -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab tools -XJTUStartTool librarySeats
-capture "09-coupons.png" \
+capture "07-coupons.png" \
   -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab tools -XJTUStartTool coupons
-capture "10-empty-rooms.png" \
+capture "08-empty-rooms.png" \
   -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab tools -XJTUStartTool emptyRooms
+capture "09-school-courses.png" \
+  -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab tools -XJTUStartTool schoolCourses
+capture "10-schedule-textbooks.png" \
+  -XJTURequireFreshLogin -XJTUPreviewAutoLogin -XJTUStartTab schedule -XJTUStartScheduleView textbooks
 
 cat >"$output_dir/README.txt" <<EOF
 岱宗盒子 iOS App Store screenshot candidate set
