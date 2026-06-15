@@ -21,6 +21,8 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '下载', link: '/download' },
       { text: '更新日志', link: '/changelog' },
+      { text: '支持', link: '/support' },
+      { text: '隐私政策', link: '/privacy' },
     ],
 
     socialLinks: [

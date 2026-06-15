@@ -31,8 +31,8 @@ Use these as the starting point for the release owner's App Store Connect entry:
 - Data used for tracking: `None`.
 - Required-reason APIs: UserDefaults, reason `CA92.1`.
 - Data collected: engineering evidence supports `No` only if the release owner confirms there is no developer-operated backend, no integrated third-party SDK/partner collection, and XJTU school-system traffic is treated as real-time servicing of the user's own request rather than developer/partner collection.
-- Privacy policy URL: required and still pending. Use `docs/ios-privacy-policy-draft.md` as the source for the published page.
-- Support URL: required for the App Store listing and still pending.
+- Privacy policy URL: required. Local website source is prepared in `website/privacy.md`, rendered in VitePress preview on 2026-06-15, and covered by the `Website Pages` workflow; public `main` deployment/final URL confirmation is still pending.
+- Support URL: required. Local website source is prepared in `website/support.md`, rendered in VitePress preview on 2026-06-15, and covered by the `Website Pages` workflow; public `main` deployment/final URL confirmation is still pending.
 
 ## Conservative Disclosure Fallback
 
@@ -49,7 +49,7 @@ Do not add categories mechanically. The release owner should select the minimum 
 
 ## Remaining Release Gates
 
-- Publish the privacy policy and support URLs.
+- Publish the prepared privacy policy and support pages, then record the final public URLs.
 - Enter the final App Store Connect privacy questionnaire answers.
 - Re-run the Release archive validator on the signed archive.
 - Inspect a signed device build or TestFlight build for credentials, cookies, tickets, verification codes, debug-auth output, and unexpected telemetry.

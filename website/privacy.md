@@ -1,10 +1,10 @@
-# iOS Privacy Policy Draft
+# 隐私政策
 
-> Review copy for publication. The publishable website page is `website/privacy.md`; keep both files aligned when the policy changes.
-
-Effective date: 2026 年 6 月 15 日
+生效日期：2026 年 6 月 15 日
 
 岱宗盒子 iOS 版是面向西安交通大学校园系统的工具应用。应用直接访问学校提供的认证、教务、校园卡、通知、空教室、图书馆座位、优惠券和课程查询等系统；当前 iOS 首发版本没有开发者自建后台，没有广告、追踪、第三方分析 SDK 或远程崩溃上报 SDK。
+
+本应用为非官方独立开发项目，与西安交通大学官方无关。
 
 ## 我们处理的信息
 
@@ -19,7 +19,7 @@ Effective date: 2026 年 6 月 15 日
 
 - 用户选择保存登录信息时，账号凭据保存在 iOS Keychain 中。
 - Cookie、票据和令牌仅用于维持学校系统会话，不应出现在日志、截图或反馈材料中。
-- 当前首发版本只允许课表、公共通知和公共空教室数据作为离线/失败兜底缓存保存在本机。
+- 当前首发版本只允许课表、公共通知和公共空教室数据作为离线或失败兜底缓存保存在本机。
 - 成绩、校园卡、首页聚合、优惠券、图书馆座位、成绩详情和全校课程搜索结果不会持久化到 UserDefaults。
 
 ## 网络与第三方
@@ -36,7 +36,4 @@ Effective date: 2026 年 6 月 15 日
 
 ## 联系方式
 
-隐私问题、支持请求或删除请求请联系：
-
-- 支持页面: `website/support.md`
-- 公开部署 URL: 待 release owner 确认最终域名或 Pages 路径
+隐私问题、支持请求或删除请求请通过[支持页面](/support)提供的渠道联系。反馈时请勿提交账号密码、验证码、Cookie、票据、令牌，截图中也请遮挡学号、姓名、手机号、课程成绩、校园卡交易等个人信息。

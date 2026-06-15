@@ -1,0 +1,70 @@
+name: Website Pages
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/website-pages.yml"
+      - "website/**"
+  push:
+    branches:
+      - main
+      - ios-kmp-migration
+    paths:
+      - ".github/workflows/website-pages.yml"
+      - "website/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Build website
+        working-directory: website
+        run: |
+          npm ci
+          npm run docs:build
+          test -f .vitepress/dist/privacy.html
+          test -f .vitepress/dist/support.html
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: website/.vitepress/dist
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
