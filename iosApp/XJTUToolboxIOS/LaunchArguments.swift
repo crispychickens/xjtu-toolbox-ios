@@ -128,6 +128,10 @@ enum XjtuLaunchArguments {
     static let startTab = "-XJTUStartTab"
     static let startTool = "-XJTUStartTool"
     static let startScheduleView = "-XJTUStartScheduleView"
+    #if DEBUG
+    static let previewEmptyFeature = "-XJTUPreviewEmptyFeature"
+    static let previewFailOnceFeature = "-XJTUPreviewFailOnceFeature"
+    #endif
 
     static var dependencyMode: XjtuDependencyMode {
         dependencyMode(arguments: arguments, buildConfiguration: .current)
@@ -266,6 +270,44 @@ enum XjtuLaunchArguments {
         }
         return raw[index + 1].trimmingCharacters(in: .whitespacesAndNewlines).takeIfNotEmpty()
     }
+
+    #if DEBUG
+    static var previewRecoveryScenario: PreviewRecoveryScenario? {
+        previewRecoveryScenario(
+            rawArguments: raw,
+            dependencyMode: dependencyMode,
+            buildConfiguration: .current
+        )
+    }
+
+    static func previewRecoveryScenario(
+        rawArguments: [String],
+        dependencyMode: XjtuDependencyMode,
+        buildConfiguration: XjtuBuildConfiguration
+    ) -> PreviewRecoveryScenario? {
+        guard buildConfiguration == .debug, dependencyMode == .preview else {
+            return nil
+        }
+        if let feature = previewRecoveryFeature(after: previewFailOnceFeature, in: rawArguments) {
+            return .failOnce(feature)
+        }
+        if let feature = previewRecoveryFeature(after: previewEmptyFeature, in: rawArguments) {
+            return .empty(feature)
+        }
+        return nil
+    }
+
+    private static func previewRecoveryFeature(
+        after argument: String,
+        in rawArguments: [String]
+    ) -> PreviewRecoveryFeature? {
+        guard let index = rawArguments.firstIndex(of: argument),
+              rawArguments.indices.contains(index + 1) else {
+            return nil
+        }
+        return PreviewRecoveryFeature(rawValue: rawArguments[index + 1])
+    }
+    #endif
 
     private static var raw: [String] {
         ProcessInfo.processInfo.arguments

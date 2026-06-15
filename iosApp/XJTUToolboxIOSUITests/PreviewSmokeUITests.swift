@@ -73,10 +73,54 @@ final class PreviewSmokeUITests: XCTestCase {
         assertExists(app.staticTexts["可使用"])
     }
 
+    func testPreviewAuthenticationChallengesComplete() {
+        var app = launchFreshLogin()
+        submitLogin(app, password: "captcha")
+        assertExists(app.navigationBars["图形验证码"])
+        app.textFields["图形验证码"].tap()
+        app.textFields["图形验证码"].typeText("1234")
+        app.buttons["继续登录"].tap()
+        assertExists(app.navigationBars["日程"])
+
+        app = launchFreshLogin()
+        submitLogin(app, password: "mfa")
+        assertExists(app.navigationBars["手机验证"])
+        app.textFields["6 位验证码"].tap()
+        app.textFields["6 位验证码"].typeText("123456")
+        app.buttons["验证"].tap()
+        assertExists(app.navigationBars["日程"])
+
+        app = launchPreviewAccountChoice()
+        assertExists(app.navigationBars["账号类型"])
+        assertExists(app.staticTexts["请选择账号类型"])
+        app.buttons["继续登录"].tap()
+        assertExists(app.navigationBars["日程"])
+    }
+
+    func testPreviewEmptyAndRetryRecoveryStates() {
+        var app = launchPreview(
+            tab: "tools",
+            tool: "emptyRooms",
+            extraArguments: [ "-XJTUPreviewEmptyFeature", "emptyRooms" ]
+        )
+        assertExists(app.staticTexts["当前筛选暂无空闲教室"])
+
+        app = launchPreview(
+            tab: "tools",
+            tool: "librarySeats",
+            extraArguments: [ "-XJTUPreviewFailOnceFeature", "librarySeats" ]
+        )
+        assertExists(app.staticTexts["数据加载失败：预览恢复场景：首次加载失败"])
+        assertExists(app.buttons["重试图书馆座位"])
+        app.buttons["重试图书馆座位"].tap()
+        assertExists(app.staticTexts["D021"])
+    }
+
     private func launchPreview(
         tab: String,
         tool: String? = nil,
-        scheduleView: String? = nil
+        scheduleView: String? = nil,
+        extraArguments: [String] = []
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -91,9 +135,38 @@ final class PreviewSmokeUITests: XCTestCase {
         if let scheduleView {
             app.launchArguments += [ "-XJTUStartScheduleView", scheduleView ]
         }
+        app.launchArguments += extraArguments
 
         app.launch()
         return app
+    }
+
+    private func launchFreshLogin(extraArguments: [String] = []) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = [ "-XJTURequireFreshLogin" ] + extraArguments
+        app.launch()
+        assertExists(app.staticTexts["统一身份认证"])
+        return app
+    }
+
+    private func launchPreviewAccountChoice() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-XJTURequireFreshLogin",
+            "-XJTUPreviewAccountChoice",
+        ]
+        app.launch()
+        return app
+    }
+
+    private func submitLogin(_ app: XCUIApplication, password: String) {
+        let usernameField = app.textFields["学号 / 手机号"]
+        usernameField.tap()
+        usernameField.typeText("3124000000")
+        let passwordField = app.secureTextFields["密码"]
+        passwordField.tap()
+        passwordField.typeText(password)
+        app.buttons["登录"].tap()
     }
 
     private func assertExists(

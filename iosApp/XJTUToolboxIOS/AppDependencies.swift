@@ -11,24 +11,37 @@ struct AppDependencies {
 
 enum AppDependencyFactory {
     static func makeDefault() -> AppDependencies {
+        let dependencies: AppDependencies
         #if canImport(XJTUToolboxShared)
         switch XjtuLaunchArguments.dependencyMode {
         case .preview:
-            makeKmpPreviewWithPlatformAdapters()
+            dependencies = makeKmpPreviewWithPlatformAdapters()
         case .realLoginValidation:
-            makeKmpWithRealLoginValidation()
+            dependencies = makeKmpWithRealLoginValidation()
         case .realEmptyRooms:
-            makeKmpPreviewWithRealEmptyRooms()
+            dependencies = makeKmpPreviewWithRealEmptyRooms()
         case .realPublicData:
-            makeKmpPreviewWithRealPublicData()
+            dependencies = makeKmpPreviewWithRealPublicData()
         case .realCampusCardAndPublicData:
-            makeKmpWithRealCampusCardAndPublicData()
+            dependencies = makeKmpWithRealCampusCardAndPublicData()
         case .realFirstReleaseCore:
-            makeKmpWithRealFirstReleaseCore()
+            dependencies = makeKmpWithRealFirstReleaseCore()
         }
         #else
-        makePreview()
+        dependencies = makePreview()
         #endif
+        #if DEBUG
+        if let scenario = XjtuLaunchArguments.previewRecoveryScenario {
+            return AppDependencies(
+                authManager: dependencies.authManager,
+                featureProvider: PreviewRecoveryFeatureProvider(
+                    provider: dependencies.featureProvider,
+                    scenario: scenario
+                )
+            )
+        }
+        #endif
+        return dependencies
     }
 
     static func makePreview() -> AppDependencies {

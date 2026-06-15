@@ -41,6 +41,8 @@ final class LaunchArgumentsTests: XCTestCase {
             XjtuLaunchArguments.realCampusCardAndPublicData,
             XjtuLaunchArguments.previewAutoLogin,
             XjtuLaunchArguments.previewAccountChoice,
+            XjtuLaunchArguments.previewEmptyFeature,
+            XjtuLaunchArguments.previewFailOnceFeature,
         ]
 
         XCTAssertEqual(
@@ -49,6 +51,36 @@ final class LaunchArgumentsTests: XCTestCase {
                 buildConfiguration: .release
             ),
             .realFirstReleaseCore
+        )
+    }
+
+    func testPreviewRecoveryScenariosAreDebugPreviewOnly() {
+        let rawArguments = [
+            XjtuLaunchArguments.previewFailOnceFeature,
+            PreviewRecoveryFeature.librarySeats.rawValue,
+        ]
+
+        XCTAssertEqual(
+            XjtuLaunchArguments.previewRecoveryScenario(
+                rawArguments: rawArguments,
+                dependencyMode: .preview,
+                buildConfiguration: .debug
+            ),
+            .failOnce(.librarySeats)
+        )
+        XCTAssertNil(
+            XjtuLaunchArguments.previewRecoveryScenario(
+                rawArguments: rawArguments,
+                dependencyMode: .realFirstReleaseCore,
+                buildConfiguration: .debug
+            )
+        )
+        XCTAssertNil(
+            XjtuLaunchArguments.previewRecoveryScenario(
+                rawArguments: rawArguments,
+                dependencyMode: .preview,
+                buildConfiguration: .release
+            )
         )
     }
 
