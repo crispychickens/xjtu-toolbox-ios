@@ -91,6 +91,10 @@ library_http_allowed="$(/usr/libexec/PlistBuddy -c 'Print :NSAppTransportSecurit
 library_subdomains="$(/usr/libexec/PlistBuddy -c 'Print :NSAppTransportSecurity:NSExceptionDomains:rg.lib.xjtu.edu.cn:NSIncludesSubdomains' "$app_info" 2>/dev/null)" || fail "library ATS subdomain policy is missing"
 [[ "$library_http_allowed" == "true" ]] || fail "library HTTP ATS exception is missing"
 [[ "$library_subdomains" == "false" ]] || fail "library ATS exception must not include subdomains"
+library_oauth_http_allowed="$(/usr/libexec/PlistBuddy -c 'Print :NSAppTransportSecurity:NSExceptionDomains:org.xjtu.edu.cn:NSExceptionAllowsInsecureHTTPLoads' "$app_info" 2>/dev/null)" || fail "library OAuth redirect ATS exception is missing"
+library_oauth_subdomains="$(/usr/libexec/PlistBuddy -c 'Print :NSAppTransportSecurity:NSExceptionDomains:org.xjtu.edu.cn:NSIncludesSubdomains' "$app_info" 2>/dev/null)" || fail "library OAuth redirect ATS subdomain policy is missing"
+[[ "$library_oauth_http_allowed" == "true" ]] || fail "library OAuth redirect ATS exception is missing"
+[[ "$library_oauth_subdomains" == "false" ]] || fail "library OAuth redirect ATS exception must not include subdomains"
 
 binary_uuids="$(dwarfdump --uuid "$executable" | awk '{print $2 ":" $3}' | sort)"
 dsym_uuids="$(dwarfdump --uuid "$dsym" | awk '{print $2 ":" $3}' | sort)"

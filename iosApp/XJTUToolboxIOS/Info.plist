@@ -22,6 +22,13 @@
 	<dict>
 		<key>NSExceptionDomains</key>
 		<dict>
+			<key>org.xjtu.edu.cn</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<false/>
+			</dict>
 			<key>rg.lib.xjtu.edu.cn</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
