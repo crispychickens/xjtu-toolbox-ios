@@ -62,13 +62,15 @@ device_family="$(plist_json_value "$app_info" UIDeviceFamily)"
 archive_bundle_id="$(plist_value "$archive_info" ApplicationProperties.CFBundleIdentifier)"
 archive_version="$(plist_value "$archive_info" ApplicationProperties.CFBundleShortVersionString)"
 archive_build="$(plist_value "$archive_info" ApplicationProperties.CFBundleVersion)"
-archive_architectures="$(plist_json_value "$archive_info" ApplicationProperties.Architectures)"
 
 [[ "$archive_bundle_id" == "$bundle_id" ]] || fail "archive and app bundle ids differ"
 [[ "$archive_version" == "$marketing_version" ]] || fail "archive and app marketing versions differ"
 [[ "$archive_build" == "$build_number" ]] || fail "archive and app build numbers differ"
-[[ "$archive_architectures" == '["arm64"]' ]] || fail "archive architecture must be arm64: $archive_architectures"
-[[ "$(lipo -archs "$executable")" == "arm64" ]] || fail "app executable must contain only arm64"
+if archive_architectures="$(plutil -extract ApplicationProperties.Architectures json -o - "$archive_info" 2>/dev/null)"; then
+  [[ "$archive_architectures" == '["arm64"]' ]] || fail "archive architecture metadata must be arm64: $archive_architectures"
+fi
+executable_architectures="$(lipo -archs "$executable")"
+[[ "$executable_architectures" == "arm64" ]] || fail "app executable must contain only arm64: $executable_architectures"
 if grep -aRFq '[DEBUG-AUTH-2FA]' "$app_path"; then
   fail "Release app bundle contains the debug-auth logging marker"
 fi
