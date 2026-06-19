@@ -51,6 +51,8 @@ jobs:
           xcodegen --version
 
       - name: Run iOS automated release gate
+        env:
+          IOS_AUTOMATED_RELEASE_GATE_SKIP_TESTS: ${{ github.ref_name == 'ios-release-validation' && '1' || '0' }}
         run: |
           gate_log="${RUNNER_TEMP}/XJTUToolboxIOS-release-gate.log"
           set +e

@@ -13,6 +13,7 @@ simulator_id="${IOS_SIMULATOR_ID:-}"
 result_bundle="${IOS_RESULT_BUNDLE:-$temp_root/XJTUToolboxIOS-tests.xcresult}"
 archive_path="${IOS_ARCHIVE_PATH:-$temp_root/XJTUToolboxIOS.xcarchive}"
 archive_result_bundle="${IOS_ARCHIVE_RESULT_BUNDLE:-$temp_root/XJTUToolboxIOS-archive.xcresult}"
+skip_tests="${IOS_AUTOMATED_RELEASE_GATE_SKIP_TESTS:-0}"
 skip_archive="${IOS_AUTOMATED_RELEASE_GATE_SKIP_ARCHIVE:-0}"
 skip_shared_check="${IOS_AUTOMATED_RELEASE_GATE_SKIP_SHARED_CHECK:-0}"
 only_testing="${IOS_AUTOMATED_RELEASE_GATE_ONLY_TESTING:-}"
@@ -86,6 +87,9 @@ require_absolute_path "IOS_ARCHIVE_RESULT_BUNDLE" "$archive_result_bundle"
 require_path_suffix "IOS_RESULT_BUNDLE" "$result_bundle" ".xcresult"
 require_path_suffix "IOS_ARCHIVE_PATH" "$archive_path" ".xcarchive"
 require_path_suffix "IOS_ARCHIVE_RESULT_BUNDLE" "$archive_result_bundle" ".xcresult"
+if [[ "$skip_tests" == "1" && "$skip_archive" == "1" ]]; then
+  fail "IOS_AUTOMATED_RELEASE_GATE_SKIP_TESTS and IOS_AUTOMATED_RELEASE_GATE_SKIP_ARCHIVE cannot both be enabled"
+fi
 
 log "Tool versions"
 sw_vers
@@ -110,31 +114,35 @@ fi
 log "Generate iOS project"
 (cd "$ios_root" && xcodegen generate)
 
-log "Select simulator"
-selection="$(select_simulator)"
-printf '%s\n' "$selection"
-selected_simulator_id="$(printf '%s\n' "$selection" | awk -F= '$1 == "id" {print $2}')"
-[[ -n "$selected_simulator_id" ]] || fail "simulator selection did not return an id"
+if [[ "$skip_tests" == "1" ]]; then
+  log "Skip iOS tests (archive-only diagnostic run)"
+else
+  log "Select simulator"
+  selection="$(select_simulator)"
+  printf '%s\n' "$selection"
+  selected_simulator_id="$(printf '%s\n' "$selection" | awk -F= '$1 == "id" {print $2}')"
+  [[ -n "$selected_simulator_id" ]] || fail "simulator selection did not return an id"
 
-log "Boot selected simulator"
-xcrun simctl boot "$selected_simulator_id" || true
-xcrun simctl bootstatus "$selected_simulator_id" -b
+  log "Boot selected simulator"
+  xcrun simctl boot "$selected_simulator_id" || true
+  xcrun simctl bootstatus "$selected_simulator_id" -b
 
-log "Run iOS tests"
-rm -rf "$result_bundle"
-test_command=(
-  xcodebuild test
-  -project XJTUToolboxIOS.xcodeproj
-  -scheme XJTUToolboxIOS
-  -destination "platform=iOS Simulator,id=$selected_simulator_id"
-  -resultBundlePath "$result_bundle"
-  -parallel-testing-enabled NO
-)
-if [[ -n "$only_testing" ]]; then
-  test_command+=("-only-testing:$only_testing")
-  echo "  Test scope: $only_testing"
+  log "Run iOS tests"
+  rm -rf "$result_bundle"
+  test_command=(
+    xcodebuild test
+    -project XJTUToolboxIOS.xcodeproj
+    -scheme XJTUToolboxIOS
+    -destination "platform=iOS Simulator,id=$selected_simulator_id"
+    -resultBundlePath "$result_bundle"
+    -parallel-testing-enabled NO
+  )
+  if [[ -n "$only_testing" ]]; then
+    test_command+=("-only-testing:$only_testing")
+    echo "  Test scope: $only_testing"
+  fi
+  (cd "$ios_root" && "${test_command[@]}")
 fi
-(cd "$ios_root" && "${test_command[@]}")
 
 if [[ "$skip_archive" == "1" ]]; then
   log "iOS CI checks passed"
