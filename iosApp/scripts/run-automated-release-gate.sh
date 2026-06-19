@@ -13,6 +13,8 @@ simulator_id="${IOS_SIMULATOR_ID:-}"
 result_bundle="${IOS_RESULT_BUNDLE:-$temp_root/XJTUToolboxIOS-tests.xcresult}"
 archive_path="${IOS_ARCHIVE_PATH:-$temp_root/XJTUToolboxIOS.xcarchive}"
 skip_archive="${IOS_AUTOMATED_RELEASE_GATE_SKIP_ARCHIVE:-0}"
+skip_shared_check="${IOS_AUTOMATED_RELEASE_GATE_SKIP_SHARED_CHECK:-0}"
+only_testing="${IOS_AUTOMATED_RELEASE_GATE_ONLY_TESTING:-}"
 
 fail() {
   echo "error: $*" >&2
@@ -95,8 +97,12 @@ for shell_script in "$ios_root"/scripts/*.sh; do
   bash -n "$shell_script"
 done
 
-log "Run shared checks"
-(cd "$repo_root" && ./gradlew :shared:check)
+if [[ "$skip_shared_check" == "1" ]]; then
+  log "Skip shared checks (covered by a separate CI job)"
+else
+  log "Run shared checks"
+  (cd "$repo_root" && ./gradlew :shared:check)
+fi
 
 log "Generate iOS project"
 (cd "$ios_root" && xcodegen generate)
@@ -113,11 +119,17 @@ xcrun simctl bootstatus "$selected_simulator_id" -b
 
 log "Run iOS tests"
 rm -rf "$result_bundle"
+test_selection_args=()
+if [[ -n "$only_testing" ]]; then
+  test_selection_args+=("-only-testing:$only_testing")
+  echo "  Test scope: $only_testing"
+fi
 (cd "$ios_root" && xcodebuild test \
   -project XJTUToolboxIOS.xcodeproj \
   -scheme XJTUToolboxIOS \
   -destination "platform=iOS Simulator,id=$selected_simulator_id" \
   -resultBundlePath "$result_bundle" \
+  "${test_selection_args[@]}" \
   -parallel-testing-enabled NO)
 
 if [[ "$skip_archive" == "1" ]]; then
