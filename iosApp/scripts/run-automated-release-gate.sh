@@ -122,18 +122,19 @@ xcrun simctl bootstatus "$selected_simulator_id" -b
 
 log "Run iOS tests"
 rm -rf "$result_bundle"
-test_selection_args=()
+test_command=(
+  xcodebuild test
+  -project XJTUToolboxIOS.xcodeproj
+  -scheme XJTUToolboxIOS
+  -destination "platform=iOS Simulator,id=$selected_simulator_id"
+  -resultBundlePath "$result_bundle"
+  -parallel-testing-enabled NO
+)
 if [[ -n "$only_testing" ]]; then
-  test_selection_args+=("-only-testing:$only_testing")
+  test_command+=("-only-testing:$only_testing")
   echo "  Test scope: $only_testing"
 fi
-(cd "$ios_root" && xcodebuild test \
-  -project XJTUToolboxIOS.xcodeproj \
-  -scheme XJTUToolboxIOS \
-  -destination "platform=iOS Simulator,id=$selected_simulator_id" \
-  -resultBundlePath "$result_bundle" \
-  "${test_selection_args[@]}" \
-  -parallel-testing-enabled NO)
+(cd "$ios_root" && "${test_command[@]}")
 
 if [[ "$skip_archive" == "1" ]]; then
   log "iOS CI checks passed"
