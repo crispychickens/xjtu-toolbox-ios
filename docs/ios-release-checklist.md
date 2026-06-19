@@ -57,7 +57,7 @@ The archive validator checks:
 - bundle identity, `major.minor.patch` marketing version, positive build number, minimum iOS version, and iPhone-only device family;
 - Release device platform and arm64 executable;
 - compiled `AppIcon` asset in `Assets.car`, generated AppIcon PNG, and processed `CFBundleIcons` metadata;
-- privacy manifest declarations and scoped ATS exception;
+- privacy manifest declarations and scoped ATS exceptions for the library-seat HTTP entry plus its `org.xjtu.edu.cn` OAuth handoff redirect;
 - absence of the debug-auth logging marker and known unreviewed crash-reporting SDK markers;
 - matching app executable and dSYM UUIDs;
 - signing identity/team and `codesign` verification when invoked with `REQUIRE_SIGNED=1`.
@@ -71,7 +71,7 @@ Use `iosApp/scripts/capture-app-store-screenshots.sh` to create a Simplified-Chi
 
 ## Local Live-Account Diagnostic Gate
 
-Use `iosApp/scripts/run-real-feature-validation.sh` only for controlled Debug validation with an owner-operated account. The script builds and launches `-XJTURealFirstReleaseCore -XJTURealFeatureValidation -XJTUAutoSiteVerification`, waits while the owner enters credentials if needed, and polls only the sanitized `debugRealFeatureValidationResults` key. Automatic site verification is Debug-only, limited to one attempt per site per 5-minute window, and falls back to the visible user-driven action. Set `IOS_REAL_FEATURE_RESULTS_PATH=/absolute/path/results.txt` when a local evidence artifact is needed; the script writes only the sanitized result lines to that file. `IOS_REAL_FEATURE_SKIP_BUILD=1 IOS_REAL_FEATURE_SKIP_INSTALL=1` is for reusing an already installed diagnostic build. Do not record account names, passwords, verification codes, cookies, CAS tickets, OAuth tokens, response bodies, screenshots containing personal data, or full app preference dumps.
+Use `iosApp/scripts/run-real-feature-validation.sh` only for controlled Debug validation with an owner-operated account. The script builds and launches `-XJTURealFirstReleaseCore -XJTURealFeatureValidation -XJTUAutoSiteVerification`, waits while the owner enters credentials if needed, and polls only the sanitized `debugRealFeatureValidationResults` key. Automatic site verification is Debug-only, limited to one attempt per site per 5-minute window, and falls back to the visible user-driven action. The runner probes library-seat read state, coupon load/filter states, and school-course first/next-page plus representative filter search state without performing booking, swap, or coupon actions. Set `IOS_REAL_FEATURE_RESULTS_PATH=/absolute/path/results.txt` when a local evidence artifact is needed; the script writes only the sanitized result lines to that file. Set `IOS_REAL_FEATURE_ACCESS_MODE=automatic`, `normal`, or `webvpn` to force the Debug launch access mode for direct/WebVPN route validation; leave it unset to use the app's persisted/default mode. `IOS_REAL_FEATURE_SKIP_BUILD=1 IOS_REAL_FEATURE_SKIP_INSTALL=1` is for reusing an already installed diagnostic build. Do not record account names, passwords, verification codes, cookies, CAS tickets, OAuth tokens, response bodies, screenshots containing personal data, or full app preference dumps.
 
 ## Signed Archive Gate
 
