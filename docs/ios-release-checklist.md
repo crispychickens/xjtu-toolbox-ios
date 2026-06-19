@@ -56,6 +56,8 @@ Remote validation is split by feedback speed:
 
 Both workflows upload the `.xcresult` bundle as `ios-xcresult` on failure when it exists.
 
+Remote baseline on 2026-06-19: [`iOS Validation #3`](https://github.com/crispychickens/xjtu-toolbox-ios/actions/runs/27811669219) passed at `cf307cd` in 6m54s. The earlier no-archive `#2` passed all 38 simulator tests in 11m38s, isolating the remaining Xcode 16.4 failure to the release archive/validator segment.
+
 The archive validator checks:
 
 - iOS shell-script syntax before long-running build/test/archive work;
