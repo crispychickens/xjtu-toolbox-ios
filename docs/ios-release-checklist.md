@@ -49,7 +49,12 @@ xcodebuild archive \
 iosApp/scripts/validate-release-archive.sh /tmp/XJTUToolboxIOS.xcarchive
 ```
 
-The remote equivalent is `.github/workflows/ios-validation.yml`. It runs on pull requests, pushes to `main`/`ios-kmp-migration`, and manual `workflow_dispatch`; installs XcodeGen when needed; invokes the same automated gate script; and uploads the `.xcresult` bundle as `ios-xcresult` on failure.
+Remote validation is split by feedback speed:
+
+- `.github/workflows/ios-validation.yml` runs on pull requests, pushes to `main`/`ios-kmp-migration`, and manual `workflow_dispatch`; it installs XcodeGen when needed and runs `iosApp/scripts/run-ios-ci-checks.sh`, covering shell syntax, `:shared:check`, XcodeGen, and simulator XCTest without doing a generic-device archive on every branch push.
+- `.github/workflows/ios-release-gate.yml` runs on `main` pushes and manual `workflow_dispatch`; it invokes `iosApp/scripts/run-automated-release-gate.sh`, including the unsigned generic-device Release archive and archive validator. Use this workflow for release-owner evidence before signing/TestFlight work.
+
+Both workflows upload the `.xcresult` bundle as `ios-xcresult` on failure when it exists.
 
 The archive validator checks:
 
