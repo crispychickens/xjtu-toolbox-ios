@@ -19,6 +19,10 @@ plist_value() {
   plutil -extract "$2" raw "$1" 2>/dev/null || fail "missing plist key '$2' in $1"
 }
 
+plist_json_value() {
+  plutil -extract "$2" json -o - "$1" 2>/dev/null || fail "missing or unreadable plist key '$2' in $1"
+}
+
 [[ -n "$archive_path" ]] || fail "usage: $0 <path-to-xcarchive>"
 [[ -d "$archive_path" ]] || fail "archive does not exist: $archive_path"
 
@@ -45,7 +49,7 @@ build_number="$(plist_value "$app_info" CFBundleVersion)"
 primary_icon="$(plist_value "$app_info" CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName)"
 minimum_os="$(plist_value "$app_info" MinimumOSVersion)"
 platform_name="$(plist_value "$app_info" DTPlatformName)"
-device_family="$(plutil -extract UIDeviceFamily json -o - "$app_info")"
+device_family="$(plist_json_value "$app_info" UIDeviceFamily)"
 
 [[ "$bundle_id" == "$expected_bundle_id" ]] || fail "unexpected bundle id: $bundle_id"
 [[ "$marketing_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "marketing version must use major.minor.patch: $marketing_version"
@@ -58,7 +62,7 @@ device_family="$(plutil -extract UIDeviceFamily json -o - "$app_info")"
 archive_bundle_id="$(plist_value "$archive_info" ApplicationProperties.CFBundleIdentifier)"
 archive_version="$(plist_value "$archive_info" ApplicationProperties.CFBundleShortVersionString)"
 archive_build="$(plist_value "$archive_info" ApplicationProperties.CFBundleVersion)"
-archive_architectures="$(plutil -extract ApplicationProperties.Architectures json -o - "$archive_info")"
+archive_architectures="$(plist_json_value "$archive_info" ApplicationProperties.Architectures)"
 
 [[ "$archive_bundle_id" == "$bundle_id" ]] || fail "archive and app bundle ids differ"
 [[ "$archive_version" == "$marketing_version" ]] || fail "archive and app marketing versions differ"
@@ -76,8 +80,8 @@ done
 
 plutil -lint "$privacy_manifest" >/dev/null
 [[ "$(plist_value "$privacy_manifest" NSPrivacyTracking)" == "false" ]] || fail "privacy manifest must disable tracking"
-[[ "$(plutil -extract NSPrivacyTrackingDomains json -o - "$privacy_manifest")" == "[]" ]] || fail "privacy manifest must not declare tracking domains"
-[[ "$(plutil -extract NSPrivacyCollectedDataTypes json -o - "$privacy_manifest")" == "[]" ]] || fail "privacy manifest must not declare collected data types"
+[[ "$(plist_json_value "$privacy_manifest" NSPrivacyTrackingDomains)" == "[]" ]] || fail "privacy manifest must not declare tracking domains"
+[[ "$(plist_json_value "$privacy_manifest" NSPrivacyCollectedDataTypes)" == "[]" ]] || fail "privacy manifest must not declare collected data types"
 [[ "$(plist_value "$privacy_manifest" NSPrivacyAccessedAPITypes.0.NSPrivacyAccessedAPIType)" == "NSPrivacyAccessedAPICategoryUserDefaults" ]] || fail "privacy manifest must declare the UserDefaults API category"
 [[ "$(plist_value "$privacy_manifest" NSPrivacyAccessedAPITypes.0.NSPrivacyAccessedAPITypeReasons.0)" == "CA92.1" ]] || fail "privacy manifest must declare UserDefaults reason CA92.1"
 if plutil -extract NSPrivacyAccessedAPITypes.1 raw "$privacy_manifest" >/dev/null 2>&1; then
