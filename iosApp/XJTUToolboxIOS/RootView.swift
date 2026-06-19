@@ -45,15 +45,23 @@ struct RootView: View {
                 pendingSiteVerificationSiteName = nil
                 if let siteName {
                     Task {
+                        #if DEBUG
+                        if XjtuLaunchArguments.shouldRunRealFeatureValidation {
+                            await RealFeatureValidationRunner.resumeIfPendingAfterSiteVerification(
+                                siteName: siteName,
+                                authStore: authStore,
+                                featureStore: featureStore
+                            )
+                        } else {
+                            await featureStore.resumeAfterSiteVerification(
+                                siteName: siteName,
+                                selectedTab: router.selectedTab
+                            )
+                        }
+                        #else
                         await featureStore.resumeAfterSiteVerification(
                             siteName: siteName,
                             selectedTab: router.selectedTab
-                        )
-                        #if DEBUG
-                        await RealFeatureValidationRunner.resumeIfPendingAfterSiteVerification(
-                            siteName: siteName,
-                            authStore: authStore,
-                            featureStore: featureStore
                         )
                         #endif
                     }
@@ -70,6 +78,9 @@ struct RootView: View {
             }
         }
         .task {
+            #if DEBUG
+            await applyLaunchAccessModeOverrideIfNeeded()
+            #endif
             await authStore.refresh()
             guard !didApplyLaunchArguments else { return }
             didApplyLaunchArguments = true
@@ -91,6 +102,12 @@ struct RootView: View {
             authStore: authStore,
             featureStore: featureStore
         )
+    }
+
+    private func applyLaunchAccessModeOverrideIfNeeded() async {
+        guard let mode = XjtuLaunchArguments.debugAccessModeOverride else { return }
+        await authStore.syncStateFromManager()
+        await authStore.setAccessMode(mode)
     }
     #endif
 }

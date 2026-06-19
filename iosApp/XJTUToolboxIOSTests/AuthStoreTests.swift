@@ -30,6 +30,30 @@ final class AuthStoreTests: XCTestCase {
         XCTAssertEqual(authManager.loginRequests, [AuthManagerSpy.LoginRequest(username: "3124000000", password: "secret")])
     }
 
+    func testAuthenticatedStateClearsStaleErrorMessage() async {
+        let authManager = AuthManagerSpy()
+        authManager.currentState = .authenticated(username: "3124000000")
+        UserDefaults.standard.set(true, forKey: sessionContextKey)
+        let subject = AuthStore(authManager: authManager)
+        subject.username = "3124000000"
+        subject.password = "secret"
+        authManager.siteVerificationResult = .failure(message: "CAS 仍返回登录表单")
+        authManager.currentState = .siteVerificationRequired(
+            username: "3124000000",
+            siteName: "coupon",
+            message: "需要补授权"
+        )
+        _ = await subject.syncStateFromManager()
+        await subject.beginSiteVerification()
+        XCTAssertNotNil(subject.errorMessage)
+
+        authManager.currentState = .authenticated(username: "3124000000")
+        _ = await subject.syncStateFromManager()
+
+        XCTAssertNil(subject.errorMessage)
+        XCTAssertEqual(subject.state, .authenticated(username: "3124000000"))
+    }
+
     func testLogoutClearsAuthenticatedSessionContextAndLocalInputs() async {
         let authManager = AuthManagerSpy()
         let subject = AuthStore(authManager: authManager)

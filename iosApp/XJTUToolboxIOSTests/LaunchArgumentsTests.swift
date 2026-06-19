@@ -135,6 +135,47 @@ final class LaunchArgumentsTests: XCTestCase {
         )
     }
 
+    func testRealFeatureValidationDisablesRegularAutoFeatureLoads() {
+        let arguments: Set<String> = [XjtuLaunchArguments.realFeatureValidation]
+
+        XCTAssertFalse(
+            XjtuLaunchArguments.shouldAutoLoadFeatures(
+                arguments: arguments,
+                buildConfiguration: .debug
+            )
+        )
+        XCTAssertTrue(
+            XjtuLaunchArguments.shouldAutoLoadFeatures(
+                arguments: arguments,
+                buildConfiguration: .release
+            )
+        )
+    }
+
+    func testAccessModeOverrideIsDebugOnlyAndParsesKnownValues() {
+        let rawArguments = [XjtuLaunchArguments.accessModeOverride, "WebVPN"]
+
+        XCTAssertEqual(
+            XjtuLaunchArguments.debugAccessModeOverride(
+                rawArguments: rawArguments,
+                buildConfiguration: .debug
+            ),
+            .webvpn
+        )
+        XCTAssertNil(
+            XjtuLaunchArguments.debugAccessModeOverride(
+                rawArguments: rawArguments,
+                buildConfiguration: .release
+            )
+        )
+        XCTAssertNil(
+            XjtuLaunchArguments.debugAccessModeOverride(
+                rawArguments: [XjtuLaunchArguments.accessModeOverride, "invalid"],
+                buildConfiguration: .debug
+            )
+        )
+    }
+
     func testPersistentFeatureCachePrefixSeparatesDebugAndRelease() {
         let debugPreview = XjtuLaunchArguments.persistentFeatureCacheKeyPrefix(
             dependencyMode: .preview,

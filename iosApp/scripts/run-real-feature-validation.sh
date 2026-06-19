@@ -17,6 +17,7 @@ skip_install="${IOS_REAL_FEATURE_SKIP_INSTALL:-0}"
 derived_data_path="${IOS_REAL_FEATURE_DERIVED_DATA_PATH:-$temp_root/XJTUToolboxIOS-real-feature-derived-data}"
 app_path="${IOS_REAL_FEATURE_APP_PATH:-$derived_data_path/Build/Products/Debug-iphonesimulator/XJTUToolboxIOS.app}"
 results_path="${IOS_REAL_FEATURE_RESULTS_PATH:-}"
+access_mode="${IOS_REAL_FEATURE_ACCESS_MODE:-}"
 bundle_id="com.xjtu.toolbox.ios"
 diagnostic_key="debugRealFeatureValidationResults"
 pending_key="debugRealFeatureValidationPendingFeature"
@@ -66,10 +67,47 @@ print(sorted(candidates, key=lambda item: (item[0], item[1], item[2]))[0][3])
 
 delete_default_key() {
   xcrun simctl spawn "$selected_simulator_id" defaults delete "$bundle_id" "$1" >/dev/null 2>&1 || true
+  local plist_path
+  plist_path="$(preferences_plist_path || true)"
+  if [[ -n "$plist_path" && -f "$plist_path" ]]; then
+    plutil -remove "$1" "$plist_path" >/dev/null 2>&1 || true
+  fi
 }
 
 read_results() {
-  xcrun simctl spawn "$selected_simulator_id" defaults read "$bundle_id" "$diagnostic_key" 2>/dev/null || true
+  local results
+  results="$(xcrun simctl spawn "$selected_simulator_id" defaults read "$bundle_id" "$diagnostic_key" 2>/dev/null || true)"
+  if [[ -n "$results" ]]; then
+    printf '%s\n' "$results"
+    return
+  fi
+
+  local plist_path
+  plist_path="$(preferences_plist_path || true)"
+  if [[ -z "$plist_path" || ! -f "$plist_path" ]]; then
+    return
+  fi
+  python3 - "$plist_path" "$diagnostic_key" <<'PY' 2>/dev/null || true
+import plistlib
+import sys
+
+plist_path, key = sys.argv[1], sys.argv[2]
+with open(plist_path, "rb") as handle:
+    value = plistlib.load(handle).get(key)
+if isinstance(value, list):
+    for item in value:
+        print(item)
+elif isinstance(value, str):
+    print(value)
+PY
+}
+
+preferences_plist_path() {
+  local data_container
+  data_container="$(xcrun simctl get_app_container "$selected_simulator_id" "$bundle_id" data 2>/dev/null || true)"
+  if [[ -n "$data_container" ]]; then
+    printf '%s/Library/Preferences/%s.plist\n' "$data_container" "$bundle_id"
+  fi
 }
 
 require_command xcodebuild
@@ -84,6 +122,10 @@ if [[ -n "$results_path" ]]; then
   mkdir -p "$(dirname "$results_path")"
   : >"$results_path"
 fi
+case "$access_mode" in
+  ""|"automatic"|"normal"|"webvpn") ;;
+  *) fail "IOS_REAL_FEATURE_ACCESS_MODE must be one of: automatic, normal, webvpn" ;;
+esac
 
 log "Select and boot simulator"
 selected_simulator_id="$(select_simulator)"
@@ -112,10 +154,17 @@ log "Start sanitized real-feature diagnostics"
 xcrun simctl terminate "$selected_simulator_id" "$bundle_id" >/dev/null 2>&1 || true
 delete_default_key "$diagnostic_key"
 delete_default_key "$pending_key"
-xcrun simctl launch "$selected_simulator_id" "$bundle_id" \
-  -XJTURealFirstReleaseCore \
-  -XJTURealFeatureValidation \
+launch_args=(
+  -XJTURealFirstReleaseCore
+  -XJTURealFeatureValidation
   -XJTUAutoSiteVerification
+  -XJTUStartTab tools
+  -XJTUStartTool librarySeats
+)
+if [[ -n "$access_mode" ]]; then
+  launch_args+=(-XJTUAccessMode "$access_mode")
+fi
+xcrun simctl launch "$selected_simulator_id" "$bundle_id" "${launch_args[@]}"
 
 log "Poll sanitized diagnostic results"
 echo "If the app is on the login screen, enter credentials manually. The runner starts after authentication succeeds."
@@ -134,15 +183,15 @@ while (( SECONDS < deadline )); do
     last_results="$results"
   fi
 
+  if [[ "$results" == *"status=failed errorPresent=true"* ]]; then
+    fail "real-feature diagnostics reported a sanitized feature failure"
+  fi
   if [[ "$results" == *"status=finished"* ]]; then
     log "Real-feature diagnostics finished"
     if [[ -n "$results_path" ]]; then
       echo "  sanitized results: $results_path"
     fi
     exit 0
-  fi
-  if [[ "$results" == *"status=failed errorPresent=true"* ]]; then
-    fail "real-feature diagnostics reported a sanitized feature failure"
   fi
 
   sleep "$poll_interval_seconds"

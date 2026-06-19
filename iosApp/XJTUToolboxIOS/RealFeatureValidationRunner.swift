@@ -13,6 +13,14 @@ enum RealFeatureValidationRunner {
         case schoolCourses
     }
 
+    private struct SchoolCourseProbe {
+        let label: String
+        let nameQuery: String
+        let teacherQuery: String
+        let campusCode: String
+        let weekday: Int
+    }
+
     static func runIfRequested(authStore: AuthStore, featureStore: FeatureStore) async {
         guard XjtuLaunchArguments.shouldRunRealFeatureValidation else { return }
         UserDefaults.standard.removeObject(forKey: resultsDefaultsKey)
@@ -106,7 +114,7 @@ enum RealFeatureValidationRunner {
     }
 
     private static func validateCoupons(authStore: AuthStore, featureStore: FeatureStore) async -> Bool {
-        await validate(
+        let didFinish = await validate(
             name: "coupons",
             authStore: authStore,
             errorMessage: { featureStore.errorMessage(for: .coupons) },
@@ -120,10 +128,12 @@ enum RealFeatureValidationRunner {
                 ].joined(separator: " ")
             }
         )
+        guard didFinish, featureStore.errorMessage(for: .coupons) == nil else { return didFinish }
+        return await validateCouponFilterPages(authStore: authStore, featureStore: featureStore)
     }
 
     private static func validateSchoolCourses(authStore: AuthStore, featureStore: FeatureStore) async -> Bool {
-        await validate(
+        let didFinish = await validate(
             name: "schoolCourses",
             authStore: authStore,
             errorMessage: { featureStore.errorMessage(for: .schoolCourses) },
@@ -132,11 +142,170 @@ enum RealFeatureValidationRunner {
                 [
                     "loaded=\(featureStore.schoolCourses.count)",
                     "total=\(featureStore.totalSchoolCourses)",
+                    "page=\(featureStore.schoolCoursePage)",
                     "termPresent=\(!featureStore.schoolCourseTermCode.isEmpty)",
                     "canLoadMore=\(featureStore.canLoadMoreSchoolCourses)",
                 ].joined(separator: " ")
             }
         )
+        guard didFinish, featureStore.errorMessage(for: .schoolCourses) == nil else { return didFinish }
+        let didValidateNextPage = await validateSchoolCourseNextPage(authStore: authStore, featureStore: featureStore)
+        guard didValidateNextPage else { return false }
+        return await validateSchoolCourseFilterVariants(authStore: authStore, featureStore: featureStore)
+    }
+
+    private static func validateCouponFilterPages(authStore: AuthStore, featureStore: FeatureStore) async -> Bool {
+        for filter in SharedCouponFilter.allCases {
+            featureStore.updateCouponFilter(filter)
+            log("feature=coupons filter=\(filter.rawValue) status=start")
+            await featureStore.loadCoupons(force: true)
+            let state = await authStore.syncStateFromManager()
+            if case .siteVerificationRequired(_, let siteName, _) = state {
+                setPendingFeature("coupons")
+                log("feature=coupons filter=\(filter.rawValue) status=siteVerificationRequired site=\(siteName)")
+                return false
+            }
+            if let message = featureStore.errorMessage(for: .coupons) {
+                log("feature=coupons status=failed errorPresent=true \(failureSummary(message)) filter=\(filter.rawValue)")
+                return true
+            }
+            log(couponSummary(filter: filter, featureStore: featureStore))
+
+            guard featureStore.canLoadMoreCoupons else { continue }
+            log("feature=coupons filter=\(filter.rawValue) page=next status=start")
+            await featureStore.loadMoreCoupons()
+            let nextState = await authStore.syncStateFromManager()
+            if case .siteVerificationRequired(_, let siteName, _) = nextState {
+                setPendingFeature("coupons")
+                log("feature=coupons filter=\(filter.rawValue) page=next status=siteVerificationRequired site=\(siteName)")
+                return false
+            }
+            if let message = featureStore.errorMessage(for: .coupons) {
+                log("feature=coupons status=failed errorPresent=true \(failureSummary(message)) filter=\(filter.rawValue) page=next")
+                return true
+            }
+            log(couponSummary(filter: filter, featureStore: featureStore))
+        }
+        return true
+    }
+
+    private static func validateSchoolCourseNextPage(authStore: AuthStore, featureStore: FeatureStore) async -> Bool {
+        guard featureStore.canLoadMoreSchoolCourses else {
+            log("feature=schoolCourses page=next status=skipped reason=noMoreResults")
+            return true
+        }
+        log("feature=schoolCourses page=next status=start")
+        await featureStore.loadMoreSchoolCourses()
+        let state = await authStore.syncStateFromManager()
+        if case .siteVerificationRequired(_, let siteName, _) = state {
+            setPendingFeature("schoolCourses")
+            log("feature=schoolCourses page=next status=siteVerificationRequired site=\(siteName)")
+            return false
+        }
+        if let message = featureStore.errorMessage(for: .schoolCourses) {
+            log("feature=schoolCourses status=failed errorPresent=true \(failureSummary(message)) page=next")
+            return true
+        }
+        log(
+            [
+                "feature=schoolCourses",
+                "page=\(featureStore.schoolCoursePage)",
+                "status=success",
+                "loaded=\(featureStore.schoolCourses.count)",
+                "total=\(featureStore.totalSchoolCourses)",
+                "termPresent=\(!featureStore.schoolCourseTermCode.isEmpty)",
+                "canLoadMore=\(featureStore.canLoadMoreSchoolCourses)",
+            ].joined(separator: " ")
+        )
+        return true
+    }
+
+    private static func validateSchoolCourseFilterVariants(
+        authStore: AuthStore,
+        featureStore: FeatureStore
+    ) async -> Bool {
+        for probe in schoolCourseProbes {
+            applySchoolCourseProbe(probe, featureStore: featureStore)
+            log("feature=schoolCourses variant=\(probe.label) status=start")
+            await featureStore.searchSchoolCourses()
+            let state = await authStore.syncStateFromManager()
+            if case .siteVerificationRequired(_, let siteName, _) = state {
+                setPendingFeature("schoolCourses")
+                log("feature=schoolCourses variant=\(probe.label) status=siteVerificationRequired site=\(siteName)")
+                return false
+            }
+            if let message = featureStore.errorMessage(for: .schoolCourses) {
+                log("feature=schoolCourses variant=\(probe.label) status=failed errorPresent=true \(failureSummary(message))")
+                continue
+            }
+            log(schoolCourseSummary(variant: probe.label, featureStore: featureStore))
+        }
+        return true
+    }
+
+    private static func couponSummary(filter: SharedCouponFilter, featureStore: FeatureStore) -> String {
+        [
+            "feature=coupons",
+            "filter=\(filter.rawValue)",
+            "page=\(featureStore.couponPage)",
+            "status=success",
+            "loaded=\(featureStore.coupons.count)",
+            "total=\(featureStore.totalCoupons)",
+            "canLoadMore=\(featureStore.canLoadMoreCoupons)",
+        ].joined(separator: " ")
+    }
+
+    private static var schoolCourseProbes: [SchoolCourseProbe] {
+        [
+            SchoolCourseProbe(
+                label: "courseNameCommon",
+                nameQuery: "\u{6570}\u{5B66}",
+                teacherQuery: "",
+                campusCode: "",
+                weekday: 0
+            ),
+            SchoolCourseProbe(
+                label: "campus1",
+                nameQuery: "",
+                teacherQuery: "",
+                campusCode: "1",
+                weekday: 0
+            ),
+            SchoolCourseProbe(
+                label: "weekday1",
+                nameQuery: "",
+                teacherQuery: "",
+                campusCode: "",
+                weekday: 1
+            ),
+            SchoolCourseProbe(
+                label: "teacherNoMatch",
+                nameQuery: "",
+                teacherQuery: "NoSuchTeacherForDebugValidation",
+                campusCode: "",
+                weekday: 0
+            ),
+        ]
+    }
+
+    private static func applySchoolCourseProbe(_ probe: SchoolCourseProbe, featureStore: FeatureStore) {
+        featureStore.updateSchoolCourseNameQuery(probe.nameQuery)
+        featureStore.updateSchoolCourseTeacherQuery(probe.teacherQuery)
+        featureStore.updateSchoolCourseCampusCode(probe.campusCode)
+        featureStore.updateSchoolCourseWeekday(probe.weekday)
+    }
+
+    private static func schoolCourseSummary(variant: String, featureStore: FeatureStore) -> String {
+        [
+            "feature=schoolCourses",
+            "variant=\(variant)",
+            "page=\(featureStore.schoolCoursePage)",
+            "status=success",
+            "loaded=\(featureStore.schoolCourses.count)",
+            "total=\(featureStore.totalSchoolCourses)",
+            "termPresent=\(!featureStore.schoolCourseTermCode.isEmpty)",
+            "canLoadMore=\(featureStore.canLoadMoreSchoolCourses)",
+        ].joined(separator: " ")
     }
 
     private static func validate(
@@ -155,8 +324,8 @@ enum RealFeatureValidationRunner {
             return false
         }
         clearPendingFeature(name)
-        if errorMessage() != nil {
-            log("feature=\(name) status=failed errorPresent=true")
+        if let message = errorMessage() {
+            log("feature=\(name) status=failed errorPresent=true \(failureSummary(message))")
             return true
         }
         log("feature=\(name) status=success \(summary())")
@@ -184,6 +353,43 @@ enum RealFeatureValidationRunner {
         case .passwordInvalidated:
             return "passwordInvalidated"
         }
+    }
+
+    private static func failureSummary(_ message: String) -> String {
+        let normalized = message.lowercased()
+        let kind: String
+        if normalized.contains("cas/safety") ||
+            normalized.contains("补授权") ||
+            normalized.contains("siteverification") {
+            kind = "auth"
+        } else if normalized.contains("http ") {
+            kind = "http"
+        } else if normalized.contains("返回空数据") {
+            kind = "empty"
+        } else if normalized.contains("payload must be a json object") {
+            kind = "nonJson"
+        } else if normalized.contains("expected, got") {
+            kind = "unexpectedBody"
+        } else if normalized.contains("missing term code") {
+            kind = "missingTerm"
+        } else if normalized.contains("missing qxfbkccx") {
+            kind = "missingCourseModule"
+        } else if normalized.contains("missing totalsize") {
+            kind = "missingTotal"
+        } else if normalized.contains("missing rows") {
+            kind = "missingRows"
+        } else if normalized.contains("service returned code") {
+            kind = "serviceCode"
+        } else {
+            kind = "other"
+        }
+        var details = "errorKind=\(kind) errorLength=\(message.count)"
+        if let shape = message
+            .split(separator: " ")
+            .first(where: { $0.hasPrefix("shape=") }) {
+            details += " \(shape)"
+        }
+        return details
     }
 
     private static func log(_ message: String) {

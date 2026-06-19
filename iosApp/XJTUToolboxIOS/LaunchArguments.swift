@@ -124,6 +124,7 @@ enum XjtuLaunchArguments {
     static let requireFreshLogin = "-XJTURequireFreshLogin"
     static let authNetworkDebug = "-XJTUAuthNetworkDebug"
     static let realFeatureValidation = "-XJTURealFeatureValidation"
+    static let accessModeOverride = "-XJTUAccessMode"
     static let initialUsername = "-XJTUInitialUsername"
     static let startTab = "-XJTUStartTab"
     static let startTool = "-XJTUStartTool"
@@ -183,7 +184,14 @@ enum XjtuLaunchArguments {
     }
 
     static var shouldAutoLoadFeatures: Bool {
-        true
+        shouldAutoLoadFeatures(arguments: arguments, buildConfiguration: .current)
+    }
+
+    static func shouldAutoLoadFeatures(
+        arguments: Set<String>,
+        buildConfiguration: XjtuBuildConfiguration
+    ) -> Bool {
+        !shouldRunRealFeatureValidation(arguments: arguments, buildConfiguration: buildConfiguration)
     }
 
     static var shouldAutoBeginSiteVerification: Bool {
@@ -222,6 +230,24 @@ enum XjtuLaunchArguments {
     ) -> Bool {
         buildConfiguration == .debug && arguments.contains(realFeatureValidation)
     }
+
+    #if DEBUG
+    static var debugAccessModeOverride: SharedAccessMode? {
+        debugAccessModeOverride(rawArguments: raw, buildConfiguration: .current)
+    }
+
+    static func debugAccessModeOverride(
+        rawArguments: [String],
+        buildConfiguration: XjtuBuildConfiguration
+    ) -> SharedAccessMode? {
+        guard buildConfiguration == .debug,
+              let index = rawArguments.firstIndex(of: accessModeOverride),
+              rawArguments.indices.contains(index + 1) else {
+            return nil
+        }
+        return SharedAccessMode(rawValue: rawArguments[index + 1].lowercased())
+    }
+    #endif
 
     static var persistentFeatureCacheKeyPrefix: String {
         persistentFeatureCacheKeyPrefix(

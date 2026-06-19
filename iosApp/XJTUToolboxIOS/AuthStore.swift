@@ -280,6 +280,7 @@ final class AuthStore: ObservableObject {
             selectedAccountChoiceId = ""
             browserAuthRequest = request
         case .authenticated(let username):
+            errorMessage = nil
             hasAuthenticatedSessionContext = true
             UserDefaults.standard.set(true, forKey: PersistedKeys.hasAuthenticatedSessionContext)
             if self.username.isEmpty {
