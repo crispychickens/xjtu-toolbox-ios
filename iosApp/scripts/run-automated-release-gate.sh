@@ -12,6 +12,7 @@ preferred_simulator="${IOS_PREFERRED_SIMULATOR:-iPhone 16}"
 simulator_id="${IOS_SIMULATOR_ID:-}"
 result_bundle="${IOS_RESULT_BUNDLE:-$temp_root/XJTUToolboxIOS-tests.xcresult}"
 archive_path="${IOS_ARCHIVE_PATH:-$temp_root/XJTUToolboxIOS.xcarchive}"
+skip_archive="${IOS_AUTOMATED_RELEASE_GATE_SKIP_ARCHIVE:-0}"
 
 fail() {
   echo "error: $*" >&2
@@ -118,6 +119,12 @@ rm -rf "$result_bundle"
   -destination "platform=iOS Simulator,id=$selected_simulator_id" \
   -resultBundlePath "$result_bundle" \
   -parallel-testing-enabled NO)
+
+if [[ "$skip_archive" == "1" ]]; then
+  log "iOS CI checks passed"
+  echo "  XCTest result bundle: $result_bundle"
+  exit 0
+fi
 
 log "Build unsigned Release archive"
 rm -rf "$archive_path"
