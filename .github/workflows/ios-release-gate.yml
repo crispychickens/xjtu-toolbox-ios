@@ -5,6 +5,16 @@ on:
   push:
     branches:
       - main
+      - ios-release-validation
+    paths:
+      - ".github/workflows/ios-release-gate.yml"
+      - "iosApp/**"
+      - "shared/**"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - "**/*.gradle.kts"
+      - "gradle.properties"
 
 defaults:
   run:
@@ -40,12 +50,18 @@ jobs:
           xcodegen --version
 
       - name: Run iOS automated release gate
-        run: iosApp/scripts/run-automated-release-gate.sh
+        run: |
+          set -o pipefail
+          iosApp/scripts/run-automated-release-gate.sh 2>&1 | tee "${RUNNER_TEMP}/XJTUToolboxIOS-release-gate.log"
 
-      - name: Upload XCTest result bundle
+      - name: Upload release-gate diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ios-xcresult
-          path: ${{ runner.temp }}/XJTUToolboxIOS-tests.xcresult
+          name: ios-release-gate-diagnostics
+          path: |
+            ${{ runner.temp }}/XJTUToolboxIOS-release-gate.log
+            ${{ runner.temp }}/XJTUToolboxIOS-tests.xcresult
+            ${{ runner.temp }}/XJTUToolboxIOS-archive.xcresult
           if-no-files-found: ignore
+          retention-days: 7

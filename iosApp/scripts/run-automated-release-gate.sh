@@ -12,6 +12,7 @@ preferred_simulator="${IOS_PREFERRED_SIMULATOR:-iPhone 16}"
 simulator_id="${IOS_SIMULATOR_ID:-}"
 result_bundle="${IOS_RESULT_BUNDLE:-$temp_root/XJTUToolboxIOS-tests.xcresult}"
 archive_path="${IOS_ARCHIVE_PATH:-$temp_root/XJTUToolboxIOS.xcarchive}"
+archive_result_bundle="${IOS_ARCHIVE_RESULT_BUNDLE:-$temp_root/XJTUToolboxIOS-archive.xcresult}"
 skip_archive="${IOS_AUTOMATED_RELEASE_GATE_SKIP_ARCHIVE:-0}"
 skip_shared_check="${IOS_AUTOMATED_RELEASE_GATE_SKIP_SHARED_CHECK:-0}"
 only_testing="${IOS_AUTOMATED_RELEASE_GATE_ONLY_TESTING:-}"
@@ -81,8 +82,10 @@ require_command python3
 
 require_absolute_path "IOS_RESULT_BUNDLE" "$result_bundle"
 require_absolute_path "IOS_ARCHIVE_PATH" "$archive_path"
+require_absolute_path "IOS_ARCHIVE_RESULT_BUNDLE" "$archive_result_bundle"
 require_path_suffix "IOS_RESULT_BUNDLE" "$result_bundle" ".xcresult"
 require_path_suffix "IOS_ARCHIVE_PATH" "$archive_path" ".xcarchive"
+require_path_suffix "IOS_ARCHIVE_RESULT_BUNDLE" "$archive_result_bundle" ".xcresult"
 
 log "Tool versions"
 sw_vers
@@ -139,13 +142,14 @@ if [[ "$skip_archive" == "1" ]]; then
 fi
 
 log "Build unsigned Release archive"
-rm -rf "$archive_path"
+rm -rf "$archive_path" "$archive_result_bundle"
 (cd "$repo_root" && xcodebuild archive \
   -project iosApp/XJTUToolboxIOS.xcodeproj \
   -scheme XJTUToolboxIOS \
   -configuration Release \
   -destination "generic/platform=iOS" \
   -archivePath "$archive_path" \
+  -resultBundlePath "$archive_result_bundle" \
   CODE_SIGNING_ALLOWED=NO)
 
 log "Validate unsigned Release archive"
@@ -154,3 +158,4 @@ log "Validate unsigned Release archive"
 log "iOS automated release gate passed"
 echo "  XCTest result bundle: $result_bundle"
 echo "  unsigned archive: $archive_path"
+echo "  archive result bundle: $archive_result_bundle"
