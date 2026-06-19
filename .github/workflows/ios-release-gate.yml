@@ -52,8 +52,32 @@ jobs:
 
       - name: Run iOS automated release gate
         run: |
+          gate_log="${RUNNER_TEMP}/XJTUToolboxIOS-release-gate.log"
+          set +e
           set -o pipefail
-          iosApp/scripts/run-automated-release-gate.sh 2>&1 | tee "${RUNNER_TEMP}/XJTUToolboxIOS-release-gate.log"
+          iosApp/scripts/run-automated-release-gate.sh 2>&1 | tee "$gate_log"
+          gate_status="${PIPESTATUS[0]}"
+          set -e
+
+          if [[ "$gate_status" -ne 0 ]]; then
+            diagnostic_line="$(grep -E '(^|[[:space:]])(error:|fatal error:)|\*\* (BUILD|TEST|ARCHIVE) FAILED \*\*' "$gate_log" | tail -n 1 || true)"
+            if [[ -z "$diagnostic_line" ]]; then
+              diagnostic_line="$(tail -n 1 "$gate_log")"
+            fi
+            diagnostic_line="${diagnostic_line//'%'/'%25'}"
+            diagnostic_line="${diagnostic_line//$'\r'/'%0D'}"
+            diagnostic_line="${diagnostic_line//$'\n'/'%0A'}"
+            echo "::error title=iOS release gate failed::$diagnostic_line"
+
+            {
+              echo "## iOS release gate failure tail"
+              echo '```text'
+              tail -n 80 "$gate_log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          exit "$gate_status"
 
       - name: Upload release-gate diagnostics
         if: failure()
