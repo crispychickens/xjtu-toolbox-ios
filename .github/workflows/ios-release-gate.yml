@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - ios-release-validation
+      # Full diagnostic branch used when browser workflow_dispatch is unavailable.
       - ios-full-release-validation
     paths:
       - ".github/workflows/ios-release-gate.yml"
