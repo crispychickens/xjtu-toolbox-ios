@@ -11,6 +11,12 @@ import com.xjtu.toolbox.shared.network.HttpResponse
 import com.xjtu.toolbox.shared.parsing.JwappScheduleParser
 import com.xjtu.toolbox.shared.parsing.SchoolCourseParser
 import com.xjtu.toolbox.shared.parsing.WireGuards
+import com.xjtu.toolbox.shared.parsing.JsonParser
+import com.xjtu.toolbox.shared.parsing.asObjectOrNull
+import com.xjtu.toolbox.shared.parsing.asStringOrNull
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class XjtuSchoolCourseRepository(
     private val baseUrl: String = "https://jwxt.xjtu.edu.cn",
@@ -34,53 +40,112 @@ class XjtuSchoolCourseRepository(
         val httpSession = session.asHttpSiteSession()
         initializeApp(httpSession)
         val selectedTerm = termCode?.trim()?.takeIf { it.isNotBlank() } ?: currentTerm(httpSession)
-        val response = httpSession.execute(
-            formPost(
-                url = "$appBase/modules/qxkcb/qxfbkccx.do",
-                fields = listOf(
-                    "querySetting" to querySetting(
-                        termCode = selectedTerm,
-                        courseName = courseName,
-                        teacher = teacher,
-                        campusCode = campusCode,
-                    ),
-                    "*order" to "+KKDWDM,+KCH,+KXH",
-                    "SKXQ" to weekday.takeIf { it > 0 }?.toString().orEmpty(),
-                    "KSJC" to "",
-                    "JSJC" to "",
-                    "pageSize" to pageSize.toString(),
-                    "pageNumber" to page.toString(),
+        val request = formPost(
+            url = "$appBase/modules/qxkcb/qxfbkccx.do",
+            fields = listOf(
+                "querySetting" to querySetting(
+                    termCode = selectedTerm,
+                    courseName = courseName,
+                    teacher = teacher,
+                    campusCode = campusCode,
                 ),
-                referer = "$appBase/*default/index.do",
+                "*order" to "+KKDWDM,+KCH,+KXH",
+                "SKXQ" to weekday.takeIf { it > 0 }?.toString().orEmpty(),
+                "KSJC" to "",
+                "JSJC" to "",
+                "pageSize" to pageSize.toString(),
+                "pageNumber" to page.toString(),
             ),
+            referer = "$appBase/*default/index.do",
         )
+        val response = executeWithWebVpnWarmupRetry(httpSession, request, operation = "全校课程查询")
         validateResponse(response, "全校课程查询")
         return SchoolCourseParser.parsePage(response.bodyText, selectedTerm, page, pageSize)
     }
 
     private suspend fun initializeApp(session: HttpSiteSession) {
-        val response = session.execute(
+        val request = HttpRequest(
+            url = "$appBase/*default/index.do",
+            headers = mapOf("Accept" to "text/html"),
+        )
+        val response = followWebVpnEnvelopeIfPresent(session, session.execute(request), request)
+        validateResponse(response, "全校课程查询初始化")
+    }
+
+    private suspend fun executeWithWebVpnWarmupRetry(
+        session: HttpSiteSession,
+        request: HttpRequest,
+        operation: String,
+    ): HttpResponse {
+        val response = session.execute(request)
+        val warmed = followWebVpnEnvelopeIfPresent(session, response, request)
+        return if (warmed === response) {
+            response
+        } else {
+            validateResponse(warmed, "$operation WebVPN 应用入口")
+            session.execute(request)
+        }
+    }
+
+    private suspend fun followWebVpnEnvelopeIfPresent(
+        session: HttpSiteSession,
+        response: HttpResponse,
+        request: HttpRequest,
+    ): HttpResponse {
+        val followUrl = response.webVpnEnvelopeUrl() ?: return response
+        return session.execute(
             HttpRequest(
-                url = "$appBase/*default/index.do",
-                headers = mapOf("Accept" to "text/html"),
+                url = followUrl,
+                headers = mapOf(
+                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Referer" to request.url,
+                ),
             ),
         )
-        validateResponse(response, "全校课程查询初始化")
     }
 
     private suspend fun currentTerm(session: HttpSiteSession): String {
         cachedCurrentTerm?.let { return it }
-        val response = session.execute(
-            formPost(
+        return runCatching {
+            currentTermFrom(
+                session = session,
                 url = "$appBase/modules/bjkcb/dqxnxq.do",
-                fields = emptyList(),
                 referer = "$appBase/*default/index.do",
-            ),
-        )
-        validateResponse(response, "全校课程当前学期查询")
-        return JwappScheduleParser.parseCurrentTerm(response.bodyText).also {
+                operation = "全校课程当前学期查询",
+            )
+        }.getOrElse { failure ->
+            failure.throwIfFatal()
+            runCatching {
+                currentTermFrom(
+                    session = session,
+                    url = "$baseUrl/jwapp/sys/wdkb/modules/jshkcb/dqxnxq.do",
+                    referer = "$baseUrl/jwapp/sys/wdkb/*default/index.do",
+                    operation = "课表当前学期查询",
+                )
+            }.getOrElse { fallbackFailure ->
+                fallbackFailure.throwIfFatal()
+                inferCurrentAcademicTerm()
+            }
+        }.also {
             cachedCurrentTerm = it
         }
+    }
+
+    private suspend fun currentTermFrom(
+        session: HttpSiteSession,
+        url: String,
+        referer: String,
+        operation: String,
+    ): String {
+        val response = session.execute(
+            formPost(
+                url = url,
+                fields = emptyList(),
+                referer = referer,
+            ),
+        )
+        validateResponse(response, operation)
+        return JwappScheduleParser.parseCurrentTerm(response.bodyText)
     }
 
     private fun querySetting(
@@ -161,6 +226,33 @@ class XjtuSchoolCourseRepository(
         finalUrl.contains("login.xjtu.edu.cn", ignoreCase = true) ||
             WireGuards.isAuthHtml(bodyText)
 
+    private fun HttpResponse.webVpnEnvelopeUrl(): String? {
+        val root = runCatching { JsonParser(bodyText).parse().asObjectOrNull() }
+            .getOrNull()
+            ?: return null
+        if ("datas" in root || "code" in root || "url" !in root || "success" !in root) return null
+        val rawUrl = root["url"]?.asStringOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        return resolveSafeFollowUrl(rawUrl)
+    }
+
+    private fun HttpResponse.resolveSafeFollowUrl(rawUrl: String): String? {
+        val absolute = when {
+            rawUrl.startsWith("https://", ignoreCase = true) ||
+                rawUrl.startsWith("http://", ignoreCase = true) -> rawUrl
+            rawUrl.startsWith("/") &&
+                finalUrl.contains("webvpn.xjtu.edu.cn", ignoreCase = true) &&
+                !rawUrl.startsWith("/jwapp/", ignoreCase = true) ->
+                "https://webvpn.xjtu.edu.cn$rawUrl"
+            rawUrl.startsWith("/") -> "$baseUrl$rawUrl"
+            else -> return null
+        }
+        return absolute.takeIf {
+            it.contains("jwxt.xjtu.edu.cn", ignoreCase = true) ||
+                it.contains("webvpn.xjtu.edu.cn", ignoreCase = true) ||
+                it.contains("login.xjtu.edu.cn", ignoreCase = true)
+        }
+    }
+
     private fun SiteSession.asHttpSiteSession(): HttpSiteSession =
         (this as? HttpSiteSession)
             ?.also {
@@ -193,3 +285,55 @@ class XjtuSchoolCourseRepository(
         private const val AJAX_ACCEPT = "application/json, text/javascript, */*; q=0.01"
     }
 }
+
+private fun Throwable.throwIfFatal() {
+    if (this is SiteVerificationRequiredException || this is CancellationException) throw this
+}
+
+@OptIn(ExperimentalTime::class)
+internal fun inferCurrentAcademicTerm(): String {
+    val epochMillisInShanghai = Clock.System.now().toEpochMilliseconds() + SHANGHAI_OFFSET_MILLIS
+    val epochDay = floorDiv(epochMillisInShanghai, MILLIS_PER_DAY)
+    val yearMonth = gregorianYearMonthFromEpochDay(epochDay)
+    return inferAcademicTerm(yearMonth.year, yearMonth.month)
+}
+
+internal fun inferAcademicTerm(year: Int, month: Int): String {
+    require(month in 1..12) { "month must be in 1..12" }
+    return when (month) {
+        in 9..12 -> "$year-${year + 1}-1"
+        1 -> "${year - 1}-$year-1"
+        else -> "${year - 1}-$year-2"
+    }
+}
+
+private fun gregorianYearMonthFromEpochDay(epochDay: Long): YearMonth {
+    val adjusted = epochDay + DAYS_FROM_CIVIL_1970_01_01
+    val era = floorDiv(adjusted, DAYS_PER_ERA)
+    val dayOfEra = adjusted - era * DAYS_PER_ERA
+    val yearOfEra = (dayOfEra - dayOfEra / 1_460 + dayOfEra / 36_524 - dayOfEra / 146_096) / 365
+    var year = yearOfEra + era * 400
+    val dayOfYear = dayOfEra - (365 * yearOfEra + yearOfEra / 4 - yearOfEra / 100)
+    val monthPrime = (5 * dayOfYear + 2) / 153
+    val month = monthPrime + if (monthPrime < 10) 3 else -9
+    if (month <= 2) year += 1
+    return YearMonth(year.toInt(), month.toInt())
+}
+
+private fun floorDiv(value: Long, divisor: Long): Long {
+    var quotient = value / divisor
+    if ((value xor divisor) < 0 && quotient * divisor != value) {
+        quotient -= 1
+    }
+    return quotient
+}
+
+private data class YearMonth(
+    val year: Int,
+    val month: Int,
+)
+
+private const val MILLIS_PER_DAY = 86_400_000L
+private const val SHANGHAI_OFFSET_MILLIS = 8 * 60 * 60 * 1_000L
+private const val DAYS_PER_ERA = 146_097L
+private const val DAYS_FROM_CIVIL_1970_01_01 = 719_468L

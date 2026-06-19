@@ -34,6 +34,42 @@ class WebVpnNetworkTest {
     }
 
     @Test
+    fun webVpnBackendRewritesRefererHeaderToVpnUrl() = runTest {
+        val recording = RecordingHttpClient()
+        val backend = SessionBackend.webvpn(recording)
+        val referer = "https://jwxt.xjtu.edu.cn/jwapp/sys/kcbcx/*default/index.do"
+
+        backend.httpClient.execute(
+            HttpRequest(
+                url = "https://jwxt.xjtu.edu.cn/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do",
+                method = HttpMethod.POST,
+                headers = mapOf("Referer" to referer),
+            ),
+        )
+
+        val sentReferer = recording.requests.single().headers["Referer"].orEmpty()
+        assertTrue(WebVpnUrlCodec().isVpnUrl(sentReferer))
+        assertEquals(referer, WebVpnUrlCodec().fromVpnUrl(sentReferer))
+    }
+
+    @Test
+    fun webVpnBackendDoesNotDoubleRewriteRefererHeader() = runTest {
+        val recording = RecordingHttpClient()
+        val backend = SessionBackend.webvpn(recording)
+        val referer = WebVpnUrlCodec().toVpnUrl("https://jwxt.xjtu.edu.cn/jwapp/sys/kcbcx/*default/index.do")
+
+        backend.httpClient.execute(
+            HttpRequest(
+                url = "https://jwxt.xjtu.edu.cn/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do",
+                method = HttpMethod.POST,
+                headers = mapOf("Referer" to referer),
+            ),
+        )
+
+        assertEquals(referer, recording.requests.single().headers["Referer"])
+    }
+
+    @Test
     fun cookieStoreKeepsDomainsIsolated() {
         val store = InMemoryCookieStore()
         store.save(StoredCookie(name = "TGC", value = "normal", domain = "login.xjtu.edu.cn"))

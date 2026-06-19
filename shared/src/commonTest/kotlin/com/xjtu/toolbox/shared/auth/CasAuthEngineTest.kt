@@ -60,6 +60,27 @@ class CasAuthEngineTest {
     }
 
     @Test
+    fun siteVerificationAcceptsAuthenticatedPageWithoutExecutionAsSiteSessionSuccess() = runTest {
+        val client = QueueHttpClient()
+        val engine = casEngine(client)
+
+        val result = engine.beginSiteVerification(
+            credentials = Credentials("3124000000", "secret"),
+            accessMode = AccessMode.NORMAL,
+            site = SiteKey.LIBRARY,
+            context = SiteVerificationContext(
+                finalUrl = "http://rg.lib.xjtu.edu.cn:8086/seat/",
+                bodyText = "<html><title>登录成功 - 西安交通大学统一身份认证网关</title></html>",
+            ),
+        )
+
+        val success = assertIs<EngineLoginResult.SiteSessionSuccess>(result)
+        assertEquals(SiteKey.LIBRARY, success.site)
+        assertEquals(emptyMap(), success.headers)
+        assertEquals(0, client.requests.size)
+    }
+
+    @Test
     fun captchaLoginFetchesImageAndSubmitsUserCode() = runTest {
         val client = QueueHttpClient(
             HttpResponse(
@@ -408,10 +429,53 @@ class CasAuthEngineTest {
             ),
         )
 
-        assertIs<EngineLoginResult.Success>(result)
+        val success = assertIs<EngineLoginResult.SiteSessionSuccess>(result)
+        assertEquals(SiteKey.SCHEDULE, success.site)
+        assertEquals(emptyMap(), success.headers)
         assertEquals("https://login.xjtu.edu.cn/cas/mfa/detect", client.requests[0].url)
         assertEquals("https://login.xjtu.edu.cn/cas/login?service=https%3A%2F%2Fjwxt.xjtu.edu.cn%2Fjwapp", client.requests[1].url)
         assertEquals("https://jwxt.xjtu.edu.cn/jwapp/sys/homeapp/index.do", client.requests[2].url)
+        assertEquals(3, client.requests.size)
+    }
+
+    @Test
+    fun librarySiteVerificationClaimsSessionWithoutHeadersAfterLandingSuccess() = runTest {
+        val client = QueueHttpClient(
+            HttpResponse(
+                code = 200,
+                finalUrl = "https://login.xjtu.edu.cn/cas/mfa/detect",
+                bodyText = """{"code":0,"data":{"state":"mfa-state","need":false}}""",
+            ),
+            HttpResponse(
+                code = 302,
+                finalUrl = "https://login.xjtu.edu.cn/cas/login?service=library",
+                headers = mapOf(
+                    "Location" to "https://login.xjtu.edu.cn/cas/oauth2.0/callbackAuthorize?ticket=ST-1",
+                    "Set-Cookie" to "TGC=opaque; Path=/cas; Secure; HttpOnly",
+                ),
+            ),
+            HttpResponse(
+                code = 200,
+                finalUrl = "http://rg.lib.xjtu.edu.cn:8086/seat/",
+                bodyText = "<html><div class=\"btn-group\"><span>seat</span></div></html>",
+            ),
+        )
+        val engine = casEngine(client)
+
+        val result = engine.beginSiteVerification(
+            credentials = Credentials("3124000000", "secret"),
+            accessMode = AccessMode.NORMAL,
+            site = SiteKey.LIBRARY,
+            context = SiteVerificationContext(
+                finalUrl = "https://login.xjtu.edu.cn/cas/login?service=library",
+                bodyText = loginPage(mfaEnabled = true),
+            ),
+        )
+
+        val success = assertIs<EngineLoginResult.SiteSessionSuccess>(result)
+        assertEquals(SiteKey.LIBRARY, success.site)
+        assertEquals(emptyMap(), success.headers)
+        assertEquals("http://rg.lib.xjtu.edu.cn:8086/seat/", client.requests[2].url)
         assertEquals(3, client.requests.size)
     }
 
@@ -577,9 +641,12 @@ class CasAuthEngineTest {
             ),
         )
 
-        assertIs<EngineLoginResult.Success>(result)
+        val success = assertIs<EngineLoginResult.SiteSessionSuccess>(result)
+        assertEquals(SiteKey.SCHEDULE, success.site)
+        assertEquals(emptyMap(), success.headers)
         assertEquals("https://jwxt.xjtu.edu.cn/jwapp/sys/homeapp/index.do", client.requests[2].url)
         assertEquals("https://login.xjtu.edu.cn/cas/oauth2.0/callbackAuthorize?ticket=ST-1", client.requests[3].url)
+        assertEquals(4, client.requests.size)
     }
 
     @Test
@@ -616,7 +683,9 @@ class CasAuthEngineTest {
             ),
         )
 
-        assertIs<EngineLoginResult.Success>(result)
+        val success = assertIs<EngineLoginResult.SiteSessionSuccess>(result)
+        assertEquals(SiteKey.CAMPUS_CARD, success.site)
+        assertEquals(emptyMap(), success.headers)
         assertEquals("https://ncard.xjtu.edu.cn/berserker-base/redirect?type=login&loginFrom=h5&synAccessSource=h5", client.requests[2].url)
         assertEquals(3, client.requests.size)
     }

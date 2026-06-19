@@ -16,10 +16,11 @@ object SchoolCourseParser {
         val root = JsonParser(json).parse().asObjectOrNull()
             ?: error("school-course payload must be a JSON object")
         requireJwappOk(root)
-        val data = root["datas"]?.asObjectOrNull()
+        val datas = root["datas"]?.asObjectOrNull()
+        val data = datas
             ?.get("qxfbkccx")
             ?.asObjectOrNull()
-            ?: error("school-course response missing qxfbkccx")
+            ?: error("school-course response missing qxfbkccx ${root.shapeDiagnostics(datas)}")
         val total = data["totalSize"]?.asIntOrNull()
             ?: error("school-course response missing totalSize")
         val rows = data["rows"]?.asArrayOrNull()
@@ -66,4 +67,106 @@ object SchoolCourseParser {
             },
         )
     }
+
+    private fun Map<String, JsonValue>.shapeDiagnostics(datas: Map<String, JsonValue>?): String {
+        val code = this["code"]?.asStringOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: "absent"
+        val topKeys = keys.sorted().joinToString(",").ifBlank { "none" }
+        val datasKeys = datas?.keys?.sorted()?.joinToString(",")?.ifBlank { "none" } ?: "absent"
+        val url = this["url"]?.asStringOrNull()?.trim()?.takeIf { it.isNotBlank() }
+        return "shape=code:$code;top:$topKeys;datas:$datasKeys;url:${url.safeUrlDiagnostics()}"
+    }
+
+    private fun String?.safeUrlDiagnostics(): String {
+        val url = this ?: return "absent"
+        val normalized = url.lowercase()
+        val host = normalized.safeHostDiagnostic()
+        val tags = buildList {
+            if ("kcbcx" in normalized) add("kcbcx")
+            if ("wdkb" in normalized) add("wdkb")
+            if ("homeapp" in normalized) add("homeapp")
+            if ("cas" in normalized) add("cas")
+            if ("*default" in normalized || "%2adefault" in normalized) add("default")
+            if ("modules" in normalized) add("modules")
+            if ("qxfbkccx" in normalized) add("qxfbkccx")
+        }.joinToString(",").ifBlank { "none" }
+        return "$host:$tags;path:${url.safePathDiagnostics()};query:${url.safeQueryDiagnostics()}"
+    }
+
+    private fun String.safeHostDiagnostic(): String {
+        if (startsWith("/")) return "relative"
+        val host = substringAfter("://", missingDelimiterValue = "")
+            .substringBefore("/")
+            .substringBefore("?")
+            .substringBefore("#")
+            .substringBefore(":")
+        return when {
+            host.equals("login.xjtu.edu.cn", ignoreCase = true) -> "login"
+            host.equals("jwxt.xjtu.edu.cn", ignoreCase = true) -> "jwxt"
+            host.equals("webvpn.xjtu.edu.cn", ignoreCase = true) -> "webvpn"
+            else -> "other"
+        }
+    }
+
+    private fun String.safePathDiagnostics(): String {
+        val path = pathOnly()
+        if (path.isBlank() || path == "/") return "root"
+        val segments = path.trim('/').split('/').filter { it.isNotBlank() }
+        val first = segments.firstOrNull()?.safePathSegmentLabel() ?: "root"
+        return "segments:${segments.size},first:$first"
+    }
+
+    private fun String.pathOnly(): String {
+        val noQueryOrFragment = substringBefore("#").substringBefore("?")
+        if (noQueryOrFragment.startsWith("/")) return noQueryOrFragment
+        val afterScheme = noQueryOrFragment.substringAfter("://", missingDelimiterValue = "")
+        if (afterScheme.isBlank()) return ""
+        val afterHost = afterScheme.substringAfter("/", missingDelimiterValue = "")
+        return afterHost.takeIf { it.isNotBlank() }?.let { "/$it" }.orEmpty()
+    }
+
+    private fun String.safePathSegmentLabel(): String {
+        val segment = lowercase()
+        return when (segment) {
+            "auth",
+            "cas",
+            "connect",
+            "homeapp",
+            "http",
+            "https",
+            "jwapp",
+            "kcbcx",
+            "login",
+            "portal",
+            "user",
+            "users",
+            "vpn",
+            "wdkb",
+            "wengine-vpn",
+            -> segment
+            else -> "unknown"
+        }
+    }
+
+    private fun String.safeQueryDiagnostics(): String {
+        val query = substringAfter("?", missingDelimiterValue = "")
+            .substringBefore("#")
+            .takeIf { it.isNotBlank() }
+            ?: return "none"
+        return query.split("&")
+            .mapNotNull { parameter ->
+                parameter.substringBefore("=")
+                    .takeIf { it.isNotBlank() }
+                    ?.lowercase()
+                    ?.safeQueryName()
+            }
+            .distinct()
+            .sorted()
+            .joinToString(",")
+            .ifBlank { "none" }
+    }
+
+    private fun String.safeQueryName(): String =
+        takeIf { SAFE_QUERY_NAME.matches(it) } ?: "other"
+
+    private val SAFE_QUERY_NAME = Regex("[a-z0-9_.-]{1,40}")
 }

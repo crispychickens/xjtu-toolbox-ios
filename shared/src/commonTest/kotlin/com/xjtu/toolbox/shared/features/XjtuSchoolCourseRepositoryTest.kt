@@ -42,6 +42,18 @@ class XjtuSchoolCourseRepositoryTest {
                 pageSize = 20,
             )
         }
+        val missingModule = assertFailsWith<IllegalStateException> {
+            SchoolCourseParser.parsePage(
+                """{"code":"0","datas":{"otherModule":{"rows":[]}}}""",
+                "2025-2026-2",
+                page = 1,
+                pageSize = 20,
+            )
+        }
+        assertTrue(
+            missingModule.message.orEmpty()
+                .contains("shape=code:0;top:code,datas;datas:otherModule;url:absent"),
+        )
         assertFailsWith<IllegalStateException> {
             SchoolCourseParser.parsePage(
                 """{"code":"0","datas":{"qxfbkccx":{"totalSize":0}}}""",
@@ -50,6 +62,35 @@ class XjtuSchoolCourseRepositoryTest {
                 pageSize = 20,
             )
         }
+    }
+
+    @Test
+    fun parserReportsSanitizedWebVpnEnvelopeUrlShape() {
+        val rootUrl = assertFailsWith<IllegalStateException> {
+            SchoolCourseParser.parsePage(
+                """{"success":false,"message":"redirect required","url":"/"}""",
+                "2025-2026-2",
+                page = 1,
+                pageSize = 20,
+            )
+        }
+        assertTrue(
+            rootUrl.message.orEmpty()
+                .contains("shape=code:absent;top:message,success,url;datas:absent;url:relative:none;path:root;query:none"),
+        )
+
+        val loginUrl = assertFailsWith<IllegalStateException> {
+            SchoolCourseParser.parsePage(
+                """{"success":false,"message":"redirect required","url":"/cas/login?service=https%3A%2F%2Fjwxt.xjtu.edu.cn%2Fjwapp"}""",
+                "2025-2026-2",
+                page = 1,
+                pageSize = 20,
+            )
+        }
+        assertTrue(
+            loginUrl.message.orEmpty()
+                .contains("url:relative:cas;path:segments:2,first:cas;query:service"),
+        )
     }
 
     @Test
@@ -85,6 +126,155 @@ class XjtuSchoolCourseRepositoryTest {
         assertTrue(body.contains("%E9%AB%98%E7%AD%89%E6%95%B0%E5%AD%A6"))
         assertTrue(body.contains("%E7%8E%8B%E8%80%81%E5%B8%88"))
         assertEquals("2025-2026-2", page.termCode)
+    }
+
+    @Test
+    fun repositoryFallsBackToScheduleCurrentTermWhenKcbcxTermPayloadIsMissingCode() = runTest {
+        val client = QueueSchoolCourseHttpClient(
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/*default/index.do", bodyText = "<html>ok</html>"),
+            HttpResponse(
+                code = 200,
+                finalUrl = "$BASE/jwapp/sys/kcbcx/modules/bjkcb/dqxnxq.do",
+                bodyText = missingCurrentTermJson,
+            ),
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/wdkb/modules/jshkcb/dqxnxq.do", bodyText = currentTermJson),
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do", bodyText = courseJson),
+        )
+        val repository = XjtuSchoolCourseRepository(baseUrl = BASE)
+
+        val page = repository.courses(
+            session = httpSession(client),
+            termCode = null,
+            courseName = "",
+            teacher = "",
+            campusCode = "",
+            weekday = 0,
+            page = 1,
+            pageSize = 20,
+        )
+
+        assertEquals(
+            listOf(
+                "$BASE/jwapp/sys/kcbcx/*default/index.do",
+                "$BASE/jwapp/sys/kcbcx/modules/bjkcb/dqxnxq.do",
+                "$BASE/jwapp/sys/wdkb/modules/jshkcb/dqxnxq.do",
+                "$BASE/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do",
+            ),
+            client.requests.map { it.url },
+        )
+        assertEquals("$BASE/jwapp/sys/wdkb/*default/index.do", client.requests[2].headers["Referer"])
+        assertEquals("2025-2026-2", page.termCode)
+    }
+
+    @Test
+    fun repositoryInfersCurrentAcademicTermWhenCurrentTermEndpointsHaveNoCode() = runTest {
+        val inferredTerm = inferCurrentAcademicTerm()
+        val client = QueueSchoolCourseHttpClient(
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/*default/index.do", bodyText = "<html>ok</html>"),
+            HttpResponse(
+                code = 200,
+                finalUrl = "$BASE/jwapp/sys/kcbcx/modules/bjkcb/dqxnxq.do",
+                bodyText = missingCurrentTermJson,
+            ),
+            HttpResponse(
+                code = 200,
+                finalUrl = "$BASE/jwapp/sys/wdkb/modules/jshkcb/dqxnxq.do",
+                bodyText = missingCurrentTermJson,
+            ),
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do", bodyText = courseJson),
+        )
+        val repository = XjtuSchoolCourseRepository(baseUrl = BASE)
+
+        val page = repository.courses(
+            session = httpSession(client),
+            termCode = null,
+            courseName = "",
+            teacher = "",
+            campusCode = "",
+            weekday = 0,
+            page = 1,
+            pageSize = 20,
+        )
+
+        assertEquals(4, client.requests.size)
+        assertTrue(client.requests.last().body?.decodeToString().orEmpty().contains(inferredTerm))
+        assertEquals(inferredTerm, page.termCode)
+    }
+
+    @Test
+    fun repositoryWarmsKcbcxAndRetriesWhenCoursePostReturnsWebVpnEnvelope() = runTest {
+        val client = QueueSchoolCourseHttpClient(
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/*default/index.do", bodyText = "<html>ok</html>"),
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/modules/bjkcb/dqxnxq.do", bodyText = currentTermJson),
+            HttpResponse(
+                code = 200,
+                finalUrl = "https://webvpn.xjtu.edu.cn/https/encoded/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do",
+                bodyText = webVpnEnvelopeJson("/jwapp/sys/kcbcx/*default/index.do"),
+            ),
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/*default/index.do", bodyText = "<html>ready</html>"),
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do", bodyText = courseJson),
+        )
+        val repository = XjtuSchoolCourseRepository(baseUrl = BASE)
+
+        val page = repository.courses(
+            session = httpSession(client),
+            termCode = null,
+            courseName = "",
+            teacher = "",
+            campusCode = "",
+            weekday = 0,
+            page = 1,
+            pageSize = 20,
+        )
+
+        assertEquals(
+            listOf(
+                "$BASE/jwapp/sys/kcbcx/*default/index.do",
+                "$BASE/jwapp/sys/kcbcx/modules/bjkcb/dqxnxq.do",
+                "$BASE/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do",
+                "$BASE/jwapp/sys/kcbcx/*default/index.do",
+                "$BASE/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do",
+            ),
+            client.requests.map { it.url },
+        )
+        assertEquals("2025-2026-2", page.termCode)
+        assertEquals(41, page.total)
+    }
+
+    @Test
+    fun repositoryResolvesWebVpnEnvelopeRelativeUrlsAgainstWebVpnHost() = runTest {
+        val client = QueueSchoolCourseHttpClient(
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/*default/index.do", bodyText = "<html>ok</html>"),
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/modules/bjkcb/dqxnxq.do", bodyText = currentTermJson),
+            HttpResponse(
+                code = 200,
+                finalUrl = "https://webvpn.xjtu.edu.cn/https/encoded/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do",
+                bodyText = webVpnEnvelopeJson("/login"),
+            ),
+            HttpResponse(code = 200, finalUrl = "https://webvpn.xjtu.edu.cn/login", bodyText = "<html>ready</html>"),
+            HttpResponse(code = 200, finalUrl = "$BASE/jwapp/sys/kcbcx/modules/qxkcb/qxfbkccx.do", bodyText = courseJson),
+        )
+        val repository = XjtuSchoolCourseRepository(baseUrl = BASE)
+
+        repository.courses(
+            session = httpSession(client),
+            termCode = null,
+            courseName = "",
+            teacher = "",
+            campusCode = "",
+            weekday = 0,
+            page = 1,
+            pageSize = 20,
+        )
+
+        assertEquals("https://webvpn.xjtu.edu.cn/login", client.requests[3].url)
+    }
+
+    @Test
+    fun academicTermInferenceFollowsXjtuTeachingCalendar() {
+        assertEquals("2025-2026-1", inferAcademicTerm(year = 2026, month = 1))
+        assertEquals("2025-2026-2", inferAcademicTerm(year = 2026, month = 6))
+        assertEquals("2026-2027-1", inferAcademicTerm(year = 2026, month = 9))
     }
 
     @Test
@@ -147,6 +337,25 @@ private val currentTermJson = """
           "rows": [{"DM": "2025-2026-2"}]
         }
       }
+    }
+""".trimIndent()
+
+private val missingCurrentTermJson = """
+    {
+      "code": "0",
+      "datas": {
+        "dqxnxq": {
+          "rows": []
+        }
+      }
+    }
+""".trimIndent()
+
+private fun webVpnEnvelopeJson(url: String): String = """
+    {
+      "success": false,
+      "message": "redirect required",
+      "url": "$url"
     }
 """.trimIndent()
 

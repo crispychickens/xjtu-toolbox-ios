@@ -172,6 +172,40 @@ class DefaultAuthManagerTest {
     }
 
     @Test
+    fun siteVerificationSuccessAdoptsHeaderlessSiteSession() = runTest {
+        val context = SiteVerificationContext(
+            finalUrl = "https://login.xjtu.edu.cn/cas/login?service=library",
+            bodyText = "<html>CAS login</html>",
+        )
+        val engine = ScriptedAuthEngine(
+            EngineLoginResult.Success("3124000000"),
+            EngineLoginResult.SiteSessionSuccess("3124000000", SiteKey.LIBRARY, emptyMap()),
+        )
+        val siteSession = HeaderAdoptingSiteSession(SiteKey.LIBRARY, AccessMode.WEBVPN, context)
+        val manager = DefaultAuthManager(
+            engine = engine,
+            vault = InMemoryCredentialVault(),
+            registry = SessionRegistry(mapOf(SiteKey.LIBRARY to { siteSession })),
+            initialAccessMode = AccessMode.WEBVPN,
+        )
+
+        manager.login("3124000000", "secret")
+        assertFailsWith<SiteVerificationRequiredException> {
+            manager.ensureSession(SiteKey.LIBRARY)
+        }
+        val recovered = manager.beginSiteVerification(SiteKey.LIBRARY)
+        val authenticated = assertIs<AuthState.Authenticated>(manager.authState.value)
+        val session = manager.ensureSession(SiteKey.LIBRARY)
+
+        assertIs<LoginOutcome.Success>(recovered)
+        assertTrue(SiteKey.LIBRARY in authenticated.activeSites)
+        assertEquals(emptyMap(), siteSession.adoptedHeaders)
+        assertEquals(1, siteSession.ensureCalls)
+        assertTrue(session.isAuthenticated)
+        assertEquals(1, engine.beginSiteVerificationCalls)
+    }
+
+    @Test
     fun rejectedSiteVerificationStartBacksOffWithoutCallingSchoolSystemsAgain() = runTest {
         val clock = ManualAttemptClock(now = 1_000)
         val context = SiteVerificationContext(

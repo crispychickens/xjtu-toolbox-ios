@@ -484,7 +484,7 @@ class DefaultAuthManager(
         val context = AuthContext(username = username, credentials = credentials)
         authContext = context
         if (credentials != null) vault.save(credentials)
-        if (site != null && headers.isNotEmpty()) {
+        if (site != null) {
             registry.adoptAuthenticatedSession(
                 site = site,
                 mode = _currentAccessMode.value,

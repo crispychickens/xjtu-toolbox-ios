@@ -91,7 +91,11 @@ class CasAuthEngine(
 
         val form = CasHtmlParser.parseLoginForm(initial.bodyText)
         val execution = form.execution ?: return if (looksLikeAuthenticatedResponse(initial)) {
-            EngineLoginResult.Success(credentials.username)
+            if (site != null) {
+                EngineLoginResult.SiteSessionSuccess(credentials.username, site, emptyMap())
+            } else {
+                EngineLoginResult.Success(credentials.username)
+            }
         } else {
             EngineLoginResult.ServiceChanged("CAS 登录页缺少 execution 字段")
         }
@@ -453,7 +457,11 @@ class CasAuthEngine(
 
         val username = pendingCredentials?.username ?: "cas"
         resetPending()
-        return EngineLoginResult.Success(username)
+        return if (site != null) {
+            EngineLoginResult.SiteSessionSuccess(username, site, emptyMap())
+        } else {
+            EngineLoginResult.Success(username)
+        }
     }
 
     private suspend fun retrySiteLandingAfterCasRedirect(site: SiteKey): EngineLoginResult {
@@ -486,11 +494,7 @@ class CasAuthEngine(
             else -> null
         }
         resetPending()
-        return if (siteHeaders != null) {
-            EngineLoginResult.SiteSessionSuccess(username, site, siteHeaders)
-        } else {
-            EngineLoginResult.Success(username)
-        }
+        return EngineLoginResult.SiteSessionSuccess(username, site, siteHeaders.orEmpty())
     }
 
     private fun siteLandingUrl(site: SiteKey): String? =
