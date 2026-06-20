@@ -56,7 +56,7 @@ Remote validation is split by feedback speed:
 
 `iOS Validation` uploads the XCTest `.xcresult` bundle as `ios-xcresult` on failure when it exists. `iOS Release Gate` emits a GitHub error annotation, appends the failure tail to the job summary, and uploads `ios-release-gate-diagnostics` with the gate log and available `.xcresult` bundles on failure.
 
-Remote baseline on 2026-06-19: [`iOS Validation #8`](https://github.com/crispychickens/xjtu-toolbox-ios/actions/runs/27814801558) passed at `7bbe5ce` with `shared-check` in 1m47s and `ios-unit-tests` in 11m10s. [`iOS Release Gate #6`](https://github.com/crispychickens/xjtu-toolbox-ios/actions/runs/27814808605) passed the archive-only Xcode 16.4 diagnostic at the same commit in 5m42s. Earlier, no-archive `iOS Validation #2` passed all 38 simulator tests in 11m38s; full remote release evidence still requires a full `iOS Release Gate` run that combines all 38 tests plus archive validation.
+Remote baseline on 2026-06-19: [`iOS Validation #8`](https://github.com/crispychickens/xjtu-toolbox-ios/actions/runs/27814801558) passed at `7bbe5ce` with `shared-check` in 1m47s and `ios-unit-tests` in 11m10s. [`iOS Release Gate #6`](https://github.com/crispychickens/xjtu-toolbox-ios/actions/runs/27814808605) passed the archive-only Xcode 16.4 diagnostic at the same commit in 5m42s. [`iOS Release Gate #7`](https://github.com/crispychickens/xjtu-toolbox-ios/actions/runs/27825650322) then passed the full remote gate at `d574aa3` in 16m09s, covering `:shared:check`, all 38 XCTest cases, the unsigned archive, and archive validation in one job. Repeat the full workflow from `main` or manual dispatch after the final release commit is frozen.
 
 The archive validator checks:
 
